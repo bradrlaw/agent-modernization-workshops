@@ -1,0 +1,44 @@
+[
+  {
+    "customerId": "CUST-1001",
+    "firstName": "Alex",
+    "lastName": "Morgan",
+    "email": "alex.morgan@example.com",
+    "phone": "(555) 123-4567",
+    "address": {
+      "street": "742 Evergreen Terrace",
+      "city": "Springfield",
+      "state": "VA",
+      "zip": "22150"
+    },
+    "memberSince": "2018-03-15"
+  },
+  {
+    "customerId": "CUST-1002",
+    "firstName": "Jordan",
+    "lastName": "Rivera",
+    "email": "jordan.rivera@example.com",
+    "phone": "(555) 234-5678",
+    "address": {
+      "street": "1600 Pennsylvania Ave",
+      "city": "Arlington",
+      "state": "VA",
+      "zip": "22201"
+    },
+    "memberSince": "2020-07-22"
+  },
+  {
+    "customerId": "CUST-1003",
+    "firstName": "Taylor",
+    "lastName": "Chen",
+    "email": "taylor.chen@example.com",
+    "phone": "(555) 345-6789",
+    "address": {
+      "street": "350 Fifth Avenue",
+      "city": "Norfolk",
+      "state": "VA",
+      "zip": "23510"
+    },
+    "memberSince": "2022-01-10"
+  }
+]

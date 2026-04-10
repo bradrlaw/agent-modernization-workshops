@@ -1,0 +1,79 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🏦",
+                  "size": "Large"
+                }
+              ],
+              "verticalContentAlignment": "Center"
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${accountNickname}",
+                  "weight": "Bolder",
+                  "size": "Medium",
+                  "wrap": true
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${accountType} ••••${last4}",
+                  "spacing": "None",
+                  "isSubtle": true,
+                  "wrap": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Current Balance",
+              "value": "$${currentBalance}"
+            },
+            {
+              "title": "Available Balance",
+              "value": "$${availableBalance}"
+            },
+            {
+              "title": "Account Status",
+              "value": "${status}"
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "As of ${asOfDate}",
+          "size": "Small",
+          "isSubtle": true,
+          "horizontalAlignment": "Right"
+        }
+      ]
+    }
+  ]
+}

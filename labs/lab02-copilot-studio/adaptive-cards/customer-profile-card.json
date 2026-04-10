@@ -1,0 +1,56 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "👤 Customer Profile",
+          "weight": "Bolder",
+          "size": "Medium"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Name",
+              "value": "${firstName} ${lastName}"
+            },
+            {
+              "title": "Email",
+              "value": "${email}"
+            },
+            {
+              "title": "Phone",
+              "value": "${phone}"
+            },
+            {
+              "title": "Address",
+              "value": "${street}, ${city}, ${state} ${zip}"
+            },
+            {
+              "title": "Member Since",
+              "value": "${memberSince}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "ℹ️ To update your profile information, please visit a branch or call our support line.",
+      "wrap": true,
+      "size": "Small",
+      "isSubtle": true
+    }
+  ]
+}
