@@ -310,32 +310,11 @@ before taking action.
 Knowledge sources let the agent answer general questions (like branch hours or policies)
 that don't require calling an action.
 
-#### 3.1 Create a Knowledge FAQ Document
+#### 3.1 Upload the Knowledge FAQ
 
-First, create a file on your computer to upload as a knowledge source.
-
-1. Open **Notepad**, **Word**, or any text editor on your computer
-2. Create a new file called `banking-faq.docx` (or `.txt`) and paste the following content:
-
-```
-What are your branch hours?
-Our branches are open Monday–Friday 9:00 AM to 5:00 PM, and Saturday 9:00 AM to 1:00 PM.
-
-How do I report a lost or stolen card?
-Call our 24/7 support line at 1-800-555-0199 immediately.
-
-What is the daily ATM withdrawal limit?
-The standard daily ATM withdrawal limit is $500. Contact us to request a temporary increase.
-
-How do I set up direct deposit?
-Provide your employer with your routing number (555-000-123) and your account number.
-
-How do I dispute a transaction?
-Contact our support team within 60 days of the transaction date. You can call
-1-800-555-0199 or visit any branch.
-```
-
-3. Save the file to a location you can easily find (e.g., your Desktop)
+A sample FAQ file is included in this lab at [`sample-data/banking-faq.txt`](sample-data/banking-faq.txt).
+This file contains common banking questions and answers that the agent will use to
+respond to general inquiries.
 
 #### 3.2 Add to Copilot Studio
 
@@ -343,7 +322,7 @@ Contact our support team within 60 days of the transaction date. You can call
 2. In the agent editor, click **Knowledge** in the top navigation bar
 3. Click **+ Add knowledge**
 4. In the panel that appears, select **Files** as the source type
-5. Click **Upload** and browse to the `banking-faq.docx` (or `.txt`) file you just created
+5. Click **Upload** and browse to the `sample-data/banking-faq.txt` file from this lab
 6. Click **Add** to upload the file
 7. Wait for the status to show **Ready** — this means the file has been indexed
 
