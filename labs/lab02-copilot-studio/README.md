@@ -365,12 +365,12 @@ This flow returns all accounts belonging to a customer.
 3. In the left nav, click **My flows**
 4. Click **+ New flow** → **Instant cloud flow**
 5. Give it a name: `List Accounts`
-6. Under "Choose how to trigger this flow", select **Run a flow from Copilot**
+6. Under "Choose how to trigger this flow", select **When an agent calls the flow**
 7. Click **Create**
 
 **Add input parameter:**
 
-8. Click the **Run a flow from Copilot** trigger card to expand it
+8. Click the **When an agent calls the flow** trigger card to expand it
 9. Click **+ Add an input**
 10. Select **Text**
 11. Rename the input to `CustomerId`
@@ -420,8 +420,7 @@ This flow returns detailed balance info for a single account.
 
 1. Go back to **My flows** → **+ New flow** → **Instant cloud flow**
 2. Name: `Get Account Balance`
-3. Trigger: **Run a flow from Copilot**
-4. Click **Create**
+3. Trigger: **When an agent calls the flow**4. Click **Create**
 
 **Add input parameter:**
 
@@ -465,7 +464,7 @@ This flow returns recent transactions for a specific account with summary totals
 
 1. **My flows** → **+ New flow** → **Instant cloud flow**
 2. Name: `Get Recent Transactions`
-3. Trigger: **Run a flow from Copilot** → **Create**
+3. Trigger: **When an agent calls the flow** → **Create**
 
 **Add input parameters:**
 
@@ -507,7 +506,7 @@ This flow returns the customer's profile information.
 
 1. **My flows** → **+ New flow** → **Instant cloud flow**
 2. Name: `Get Customer Profile`
-3. Trigger: **Run a flow from Copilot** → **Create**
+3. Trigger: **When an agent calls the flow** → **Create**
 
 **Add input parameter:**
 
@@ -569,7 +568,7 @@ For each of the four Dataverse flows you created in Step 4, register it as a plu
 
    > ⚠️ **Don't see your flow?** Make sure:
    > - You're in the same environment in Copilot Studio as where you created the flows
-   > - The flow uses the "Run a flow from Copilot" trigger
+   > - The flow uses the "When an agent calls the flow" trigger
    > - The flow has been saved (not just drafted)
 
 6. Copilot Studio will show the flow's inputs and outputs
@@ -721,7 +720,7 @@ Consumption tier.
 3. In the left nav, click **My flows**
 4. Click **+ New flow** → **Instant cloud flow**
 5. Name: `Get Loan Rates`
-6. Trigger: select **Run a flow from Copilot** (no input parameters needed for this flow)
+6. Trigger: select **When an agent calls the flow** (no input parameters needed for this flow)
 7. Click **Create**
 
 **Add the HTTP action:**
@@ -1126,7 +1125,7 @@ moved between environments (dev → test → production) in real projects.
 | LLM calls the wrong action | Improve action descriptions — be more specific about when to use each one |
 | LLM doesn't call any action | Check that orchestration is set to Generative mode; verify actions are published |
 | Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
-| Power Automate flow not appearing | Ensure the flow uses the "Run a flow from Copilot" trigger and is in the same environment |
+| Power Automate flow not appearing | Ensure the flow uses the "When an agent calls the flow" trigger and is in the same environment |
 | Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
 | HTTP connector returns 401/403 | Verify APIM subscription key is correct in the flow header |
 | MCP tool not discovered | Check the MCP server endpoint is accessible; verify SSE transport is configured |
