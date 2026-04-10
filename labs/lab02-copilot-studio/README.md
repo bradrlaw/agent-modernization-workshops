@@ -330,9 +330,8 @@ respond to general inquiries.
 
 #### 3.3 Test Generative Answers
 
-1. In the agent editor, click the **Test** button (bottom-left of the Copilot Studio screen,
-   or the chat bubble icon) to open the test panel
-2. Type the following messages one at a time and verify the agent responds correctly:
+1. In the **Test your agent** panel on the right side of the screen, type the following
+   messages one at a time and verify the agent responds correctly:
 
 - "What are your branch hours?"
 - "How do I report a stolen card?"
@@ -801,9 +800,9 @@ Consumption tier.
 
 #### 7.4 Test
 
-1. In Copilot Studio, open the **Test** panel (bottom-left chat bubble icon)
-2. Click **Reset** (circular arrow icon at the top of the test panel) to start a fresh conversation
-3. Type the following messages one at a time:
+1. In the **Test your agent** panel on the right side of the screen,
+   click the **+** icon at the top to start a new conversation
+2. Type the following messages one at a time:
 
 - "What are your current loan rates?"
 - "How much is a car loan?"
@@ -874,9 +873,9 @@ build and host the loan payment calculator MCP server. Options:
 
 #### 8.3 Test
 
-1. In Copilot Studio, open the **Test** panel (bottom-left chat bubble icon)
-2. Click **Reset** (circular arrow icon) to start a fresh conversation
-3. Type the following messages one at a time and verify the agent calls the MCP tool:
+1. In the **Test your agent** panel on the right side of the screen,
+   click the **+** icon at the top to start a new conversation
+2. Type the following messages one at a time and verify the agent calls the MCP tool:
 
 - "What would my payments be on a $25,000 car loan at 5.25% for 5 years?"
 - "Calculate payments for a $300,000 mortgage at 6.5% for 30 years"
@@ -917,12 +916,16 @@ topic flows.
 #### 9.0 Open the Test Panel
 
 1. Open your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
-2. Click the **Test** button (bottom-left of the screen — it's a chat bubble icon)
-3. Click **Reset** (circular arrow icon at the top of the test panel) to ensure a fresh session
-4. For each test below, type the message in the test panel and verify the expected behavior
+2. In the **Test your agent** panel on the right side of the screen,
+   click the **+** icon at the top to start a new conversation
+3. For each test below, type the message and verify the expected behavior
+
+> 💡 **Tip:** Always click the **+** icon to start a new conversation after making changes
+> to your agent (instructions, actions, topics, or knowledge). This ensures you're testing
+> with the latest configuration and not carrying over stale context from a previous session.
 
 > 💡 **Viewing the trace:** After each agent response, look for an expandable section
-> or info icon below the response. Click it to see:
+> or info icon below the response in the **Test your agent** panel. Click it to see:
 > - Which action (if any) was called
 > - The input parameters sent to the action
 > - The raw output received
@@ -990,7 +993,7 @@ If the LLM calls the wrong action or doesn't call any:
 1. **Check action descriptions** — Are they specific enough? Do they explain when to use the action?
 2. **Check agent instructions** — Do they cover the scenario the user is asking about?
 3. **Check orchestration mode** — Ensure it's set to **Generative**, not Classic
-4. **Review the conversation trace** — In the test panel, expand the trace to see which
+4. **Review the conversation trace** — In the **Test your agent** panel, expand the trace to see which
    action the orchestrator considered and why
 
 ---
@@ -1042,7 +1045,7 @@ Before configuring channels, you need to publish the latest version of your agen
    - Multi-turn context is maintained between messages
 
 > 💡 **Tip:** Adaptive cards may render slightly differently in Teams vs the Copilot Studio
-> test panel. Always validate in Teams before considering the lab complete.
+> test chat panel. Always validate in Teams before considering the lab complete.
 >
 > ⚠️ **If the agent doesn't appear in Teams:** Make sure publishing completed successfully
 > in Copilot Studio. Also ensure you're signed into Teams with the same tenant as your
