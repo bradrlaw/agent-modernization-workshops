@@ -75,25 +75,23 @@ Copilot Studio                    Azure API Management
 
 ## Step 4: Add the Mock Response Policy
 
+Instead of configuring a backend, we'll use APIM's `return-response` policy to return
+static JSON directly from the inbound pipeline. This requires no backend and no
+separate response definition.
+
 1. Select the **Get Loan Rates** operation
-2. Go to the **Inbound processing** section → click **</>** (Code view)
-3. Replace the `<inbound>` section with:
+2. In the **Inbound processing** section, click the **</>** icon (Policy code editor)
+3. Replace the entire `<inbound>` section with:
 
 ```xml
 <inbound>
     <base />
-    <mock-response status-code="200" content-type="application/json" />
-</inbound>
-```
-
-4. Go to the **Responses** tab of the operation
-5. Click **+ Add response** → status code **200**
-6. Under **Representations**, click **+ Add representation**
-   - Content type: `application/json`
-   - Sample:
-
-```json
-{
+    <return-response>
+        <set-status code="200" reason="OK" />
+        <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+        </set-header>
+        <set-body>{
   "rates": [
     {
       "productType": "Auto Loan - New",
@@ -140,10 +138,18 @@ Copilot Studio                    Azure API Management
   ],
   "disclaimer": "Rates shown are for illustrative purposes. Actual rates depend on creditworthiness and other factors.",
   "lastUpdated": "2026-04-01T00:00:00Z"
-}
+}</set-body>
+    </return-response>
+</inbound>
 ```
 
-7. Click **Save**
+4. Click **Save**
+
+> 💡 **Why `return-response` instead of `mock-response`?** The `mock-response` policy
+> requires you to define response examples in a separate Responses tab of the operation
+> frontend definition. The `return-response` policy is self-contained — the entire
+> response (status, headers, body) is defined inline in the policy. Simpler to set up
+> and easier to understand.
 
 ---
 
@@ -191,17 +197,26 @@ For a more targeted lookup, add a parameterized endpoint:
 | URL | `/rates/{productType}` |
 | Template parameter | `productType` (string) |
 
-3. Add mock response policy and a sample response for a single product:
+3. Add the `return-response` inbound policy with a sample response for a single product:
 
-```json
-{
+```xml
+<inbound>
+    <base />
+    <return-response>
+        <set-status code="200" reason="OK" />
+        <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+        </set-header>
+        <set-body>{
   "productType": "Auto Loan - New",
   "term": "36 months",
   "minRate": 4.25,
   "maxRate": 6.75,
   "asOfDate": "2026-04-01",
   "disclaimer": "Rate depends on creditworthiness and other factors."
-}
+}</set-body>
+    </return-response>
+</inbound>
 ```
 
 ---
