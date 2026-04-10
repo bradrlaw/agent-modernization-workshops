@@ -9,7 +9,7 @@ loan payments via an MCP tool.
 
 This lab uses Copilot Studio's **generative orchestration** model: instead of manually
 wiring topic flows and trigger phrases, you define **agent instructions** and register
-**actions with rich descriptions**. The LLM orchestrator decides which action to call,
+**tools with rich descriptions**. The LLM orchestrator decides which tool to call,
 what clarifying questions to ask, and how to present the results — all based on the
 conversation context.
 
@@ -29,7 +29,7 @@ By the end of this lab you will be able to:
 
 - Create a Copilot Studio agent driven by **generative orchestration**
 - Write effective **agent instructions** that shape behavior without rigid flows
-- Register **plugin actions** with descriptions the LLM uses for routing
+- Register **tools** with descriptions the LLM uses for routing
 - Call an **external REST API** via Power Automate's HTTP connector (APIM mock backend)
 - Connect a **Model Context Protocol (MCP)** tool server to Copilot Studio
 - Add **knowledge sources** for generative grounding (FAQ, documents)
@@ -43,7 +43,7 @@ This lab deliberately uses the **generative (LLM-first)** approach:
 
 | Classic NLP Approach | Generative Orchestration (This Lab) |
 |---|---|
-| Explicit trigger phrases per topic | Agent instructions + action descriptions drive routing |
+| Explicit trigger phrases per topic | Agent instructions + tool descriptions drive routing |
 | Manual question nodes for disambiguation | LLM asks clarifying questions naturally |
 | Hardcoded branching / waterfall flows | Orchestrator decides next steps from context |
 | Topics define rigid conversation paths | Topics used only as guardrails (welcome, fallback) |
@@ -316,7 +316,7 @@ before taking action.
 ### Step 3: Add Knowledge Sources
 
 Knowledge sources let the agent answer general questions (like branch hours or policies)
-that don't require calling an action.
+that don't require calling a tool.
 
 #### 3.1 Upload the Knowledge FAQ
 
@@ -354,7 +354,7 @@ verify the knowledge source shows **Ready** status in the Knowledge tab.
 
 The agent needs actions to retrieve data from Dataverse. You'll create four
 Power Automate cloud flows. The LLM will decide **when** to call each one based on
-the action's name and description — no trigger phrases needed.
+the tool's name and description — no trigger phrases needed.
 
 > 📖 Full flow designs with output schemas: [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
 
@@ -566,20 +566,19 @@ Before connecting to Copilot Studio, verify each flow runs successfully:
 
 ---
 
-### Step 5: Register Actions (LLM-Routed)
+### Step 5: Register Tools (LLM-Routed)
 
 This is where the generative orchestration model differs most from classic Copilot Studio.
-Instead of wiring actions into topic nodes, you register them as **plugin actions** with
+Instead of wiring actions into topic nodes, you register them as **tools** with
 **descriptions the LLM reads** to decide when to invoke them.
 
-#### 5.1 Add Each Flow as an Action
+#### 5.1 Add Each Flow as a Tool
 
-For each of the four Dataverse flows you created in Step 4, register it as a plugin action:
+For each of the four Dataverse flows you created in Step 4, register it as a tool:
 
 1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
-2. Click **Actions** in the top navigation bar
-3. Click **+ Add an action**
-4. In the panel that appears, you'll see categories. Click **Power Automate** (under "Choose an action")
+2. Click **Tools** in the top navigation bar
+3. Click **+ Add a tool**
 5. You'll see a list of flows available in your environment. Find **List Accounts** and click it
 
    > ⚠️ **Don't see your flow?** Make sure:
@@ -592,7 +591,7 @@ For each of the four Dataverse flows you created in Step 4, register it as a plu
 8. Review the **output parameters** — you should see the response body text
 9. Click **Next**
 
-**Configure the action description:**
+**Configure the tool description:**
 
 10. In the **Name** field, enter: `List Accounts`
 11. In the **Description** field, enter the description from the table below
@@ -600,40 +599,40 @@ For each of the four Dataverse flows you created in Step 4, register it as a plu
 
 **Repeat steps 3–12 for each remaining flow:**
 
-| Flow | Action Name | Description |
+| Flow | Tool Name | Description |
 |---|---|---|
-| **List Accounts** | List Accounts | Use this action to retrieve all bank accounts belonging to the authenticated customer. Returns account IDs, types (Checking, Savings, Certificate), nicknames, last 4 digits, current balances, available balances, and status. Call this first when the customer asks about any account — you need the account list to know what accounts they have. |
-| **Get Account Balance** | Get Account Balance | Use this action to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
-| **Get Recent Transactions** | Get Recent Transactions | Use this action to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
-| **Get Customer Profile** | Get Customer Profile | Use this action to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
+| **List Accounts** | List Accounts | Use this tool to retrieve all bank accounts belonging to the authenticated customer. Returns account IDs, types (Checking, Savings, Certificate), nicknames, last 4 digits, current balances, available balances, and status. Call this first when the customer asks about any account — you need the account list to know what accounts they have. |
+| **Get Account Balance** | Get Account Balance | Use this tool to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
+| **Get Recent Transactions** | Get Recent Transactions | Use this tool to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
+| **Get Customer Profile** | Get Customer Profile | Use this tool to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
 
 > 💡 **Why descriptions matter so much:** In generative orchestration, the LLM reads every
-> action description on each turn to decide which action (if any) to call. Vague descriptions
+> tool description on each turn to decide which tool (if any) to call. Vague descriptions
 > like "Gets account data" lead to routing errors. Specific descriptions that explain
-> **when** to use the action and **what it returns** give the LLM the context to make
+> **when** to use the tool and **what it returns** give the LLM the context to make
 > good decisions.
 
-#### 5.2 Verify Actions Are Enabled
+#### 5.2 Verify Tools Are Enabled
 
-After adding all four actions, verify them:
+After adding all four tools, verify them:
 
-1. Click **Actions** in the top navigation bar
-2. You should see all four actions listed
-3. Each action should show a green **On** status toggle — if any are off, click the toggle to enable them
-4. Click on any action to review its description and parameters
+1. Click **Tools** in the top navigation bar
+2. You should see all four tools listed
+3. Each tool should show a green **On** status toggle — if any are off, click the toggle to enable them
+4. Click on any tool to review its description and parameters
 
 #### 5.3 Configure Adaptive Card Responses
 
-For each action, you can configure the output to use adaptive card templates so the
+For each tool, you can configure the output to use adaptive card templates so the
 agent displays rich, formatted cards instead of plain text.
 
-> 💡 **Note:** Adaptive card output formatting is configured in the **action's output settings**
-> within Copilot Studio. Click on an action → **Output** → choose how to format the response.
+> 💡 **Note:** Adaptive card output formatting is configured in the **tool's output settings**
+> within Copilot Studio. Click on a tool → **Output** → choose how to format the response.
 > The card templates are in the [`adaptive-cards/`](adaptive-cards/) folder for reference.
 > In some configurations, you may need to use a **Send a message** node in a topic to render
 > the card. See the [Adaptive Cards documentation](https://learn.microsoft.com/en-us/microsoft-copilot-studio/authoring-send-message#add-an-adaptive-card) for details.
 
-| Action | Adaptive Card |
+| Tool | Adaptive Card |
 |---|---|
 | List Accounts | [`account-list-card.json`](adaptive-cards/account-list-card.json) |
 | Get Account Balance | [`account-balance-card.json`](adaptive-cards/account-balance-card.json) |
@@ -708,11 +707,11 @@ In generative orchestration mode, **do not** create:
 - ❌ Question nodes with hardcoded disambiguation choices
 - ❌ Manual branching / condition nodes for routing
 
-The LLM handles all of this based on your instructions and action descriptions.
+The LLM handles all of this based on your instructions and tool descriptions.
 
 ---
 
-### Step 7: Add External API Action (HTTP Connector → APIM)
+### Step 7: Add External API Tool (HTTP Connector → APIM)
 
 This step demonstrates calling an **external REST API** from Copilot Studio — a pattern
 you'll use whenever the data isn't in Dataverse (existing microservices, third-party APIs,
@@ -803,18 +802,18 @@ Consumption tier.
     > ⚠️ If the test fails with a 401 or 403 error, double-check your APIM subscription key.
     > If it fails with a connection error, ensure the APIM endpoint URL is correct.
 
-#### 7.3 Register as an Action
+#### 7.3 Register as a Tool
 
 1. Return to your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
-2. Click **Actions** in the top navigation bar
-3. Click **+ Add an action**
-4. Select **Power Automate** → find and click **Get Loan Rates**
+2. Click **Tools** in the top navigation bar
+3. Click **+ Add a tool**
+4. Find and click **Get Loan Rates**
 5. This flow has no input parameters, so just review the output
 6. Click **Next**
 7. Set the **Name** to: `Get Loan Rates`
-8. Set the **Description** to: `Use this action to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options.`
+8. Set the **Description** to: `Use this tool to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options.`
 9. Click **Finish**
-10. Verify the action appears in your Actions list with a green **On** toggle
+10. Verify the tool appears in your Tools list with a green **On** toggle
 
 #### 7.4 Test
 
@@ -827,12 +826,12 @@ Consumption tier.
 - "What's the mortgage rate?"
 
 4. For each, verify:
-   - The agent calls the **Get Loan Rates** action (you'll see it in the conversation trace)
+   - The agent calls the **Get Loan Rates** tool (you'll see it in the conversation trace)
    - The response includes rate information for the requested product
    - If you configured adaptive cards, the [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) card renders
 
 > 💡 **To see the conversation trace:** In the test panel, look for a small info icon or
-> expandable section under each agent response. Click it to see which action was called
+> expandable section under each agent response. Click it to see which tool was called
 > and the raw input/output data.
 
 #### Why This Matters
@@ -865,9 +864,8 @@ build and host the loan payment calculator MCP server. Options:
 #### 8.2 Register the MCP Server in Copilot Studio
 
 1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
-2. Click **Actions** in the top navigation bar
-3. Click **+ Add an action**
-4. In the action type panel, look for **MCP Server** (Model Context Protocol)
+2. Click **Tools** in the top navigation bar
+3. Click **+ Add a tool**
 
    > 💡 **Note on MCP support:** MCP integration in Copilot Studio may be in preview.
    > If you don't see an "MCP Server" option, check [Copilot Studio release notes](https://learn.microsoft.com/en-us/microsoft-copilot-studio/whats-new)
@@ -885,7 +883,7 @@ build and host the loan payment calculator MCP server. Options:
 8. Enable the tool by toggling it **On**
 9. Click **Save**
 
-> 💡 **Key difference from Power Automate actions:** You don't write the action description —
+> 💡 **Key difference from Power Automate tools:** You don't write the tool description —
 > it comes from the MCP server's tool manifest. The server declares what it can do, and
 > Copilot Studio discovers it. This is how MCP enables interoperability across platforms.
 
@@ -907,7 +905,7 @@ build and host the loan payment calculator MCP server. Options:
 
 #### 8.4 Test the Combined Flow (Rates → Calculator)
 
-This multi-turn test shows the orchestrator chaining an HTTP action and an MCP tool:
+This multi-turn test shows the orchestrator chaining an HTTP tool and an MCP tool:
 
 | Turn | User Message | Expected Behavior |
 |---|---|---|
@@ -918,7 +916,7 @@ This multi-turn test shows the orchestrator chaining an HTTP action and an MCP t
 
 MCP is an emerging open standard that enables:
 - **Tool portability** — The same MCP server works with Copilot Studio, Claude, and other MCP-compatible agents
-- **Dynamic discovery** — Agents discover tools at runtime; no manual action registration per tool
+- **Dynamic discovery** — Agents discover tools at runtime; no manual tool registration per tool
 - **Separation of concerns** — Tool logic lives in the MCP server, not in the agent platform
 - **Ecosystem growth** — As more tools become MCP-compatible, agents gain capabilities automatically
 
@@ -944,8 +942,8 @@ topic flows.
 
 > 💡 **Viewing the trace:** After each agent response, look for an expandable section
 > or info icon below the response in the **Test your agent** panel. Click it to see:
-> - Which action (if any) was called
-> - The input parameters sent to the action
+> - Which tool (if any) was called
+> - The input parameters sent to the tool
 > - The raw output received
 > This is invaluable for debugging routing issues.
 
@@ -972,7 +970,7 @@ These test the LLM's ability to maintain context across turns:
 | 3 | "And the transactions?" | Knows to show transactions for the same savings account |
 | 4 | "What about my checking?" | Switches context to checking → asks "balance or transactions?" |
 
-#### 9.3 Cross-Action Chaining Tests
+#### 9.3 Cross-Tool Chaining Tests
 
 | Turn | User Message | Expected Behavior |
 |---|---|---|
@@ -1006,13 +1004,13 @@ The LLM should handle these **without** explicit trigger phrases:
 
 #### 9.6 Troubleshoot Routing Issues
 
-If the LLM calls the wrong action or doesn't call any:
+If the LLM calls the wrong tool or doesn't call any:
 
-1. **Check action descriptions** — Are they specific enough? Do they explain when to use the action?
+1. **Check tool descriptions** — Are they specific enough? Do they explain when to use the tool?
 2. **Check agent instructions** — Do they cover the scenario the user is asking about?
 3. **Check orchestration mode** — Ensure it's set to **Generative**, not Classic
 4. **Review the conversation trace** — In the **Test your agent** panel, expand the trace to see which
-   action the orchestrator considered and why
+   tool the orchestrator considered and why
 
 ---
 
@@ -1127,7 +1125,7 @@ moved between environments (dev → test → production) in real projects.
 - [ ] MCP server deployed and registered (Loan Payment Calculator)
 - [ ] All actions registered with LLM-optimized descriptions
 - [ ] Adaptive cards displaying financial data correctly (6 card templates)
-- [ ] Multi-turn and cross-action chaining tested (rates → calculator flow)
+- [ ] Multi-turn and cross-tool chaining tested (rates → calculator flow)
 - [ ] Guardrails tested (refuses modifications, no cross-customer data, no financial advice)
 - [ ] Agent published and tested in Microsoft Teams
 - [ ] Solution exported (`.zip`)
@@ -1138,11 +1136,10 @@ moved between environments (dev → test → production) in real projects.
 
 | Issue | Solution |
 |---|---|
-| LLM calls the wrong action | Improve action descriptions — be more specific about when to use each one |
-| LLM doesn't call any action | Check that orchestration is set to Generative mode; verify actions are published |
+| LLM calls the wrong tool | Improve tool descriptions — be more specific about when to use each one |
+| LLM doesn't call any tool | Check that orchestration is set to Generative mode; verify tools are published |
 | Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
-| Power Automate flow not appearing | Ensure the flow uses the "When an agent calls the flow" trigger and is in the same environment |
-| Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
+| Power Automate flow not appearing | Ensure the flow uses the "When an agent calls the flow" trigger and is in the same environment || Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
 | HTTP connector returns 401/403 | Verify APIM subscription key is correct in the flow header |
 | MCP tool not discovered | Check the MCP server endpoint is accessible; verify SSE transport is configured |
 | MCP tool called but returns error | Test the MCP server independently with the MCP Inspector |
@@ -1156,16 +1153,16 @@ moved between environments (dev → test → production) in real projects.
 
 | Concept | What You Learned |
 |---|---|
-| **Generative orchestration** | The LLM decides which action to call based on instructions and descriptions |
+| **Generative orchestration** | The LLM decides which tool to call based on instructions and descriptions |
 | **Agent instructions** | Natural language guidance that replaces rigid topic flows |
-| **Action descriptions** | Tell the LLM *when* to use an action and *what* it returns |
+| **Tool descriptions** | Tell the LLM *when* to use a tool and *what* it returns |
 | **Knowledge grounding** | Generative answers sourced from uploaded documents |
 | **Minimal topics** | Only welcome + fallback needed; the orchestrator handles the rest |
 | **HTTP connector** | Call any external REST API from Power Automate (APIM, microservices, third-party) |
 | **MCP tools** | Open standard for connecting agents to external tool servers with dynamic discovery |
 | **Adaptive cards** | Rich, structured UI for displaying data in chat |
 
-### Three Action Patterns
+### Three Tool Patterns
 
 This lab demonstrated three ways to give an agent capabilities:
 
@@ -1183,7 +1180,7 @@ you didn't anticipate, and maintaining dozens of topics becomes a burden.
 
 With generative orchestration:
 - **Instructions** define the agent's identity, capabilities, and boundaries
-- **Action descriptions** tell the LLM what tools are available
+- **Tool descriptions** tell the LLM what tools are available
 - The **LLM handles routing**, disambiguation, multi-turn context, and natural language variation
 - You write **fewer topics**, maintain **less configuration**, and get **better coverage**
 
