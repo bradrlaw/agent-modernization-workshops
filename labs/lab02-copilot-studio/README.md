@@ -795,7 +795,24 @@ Before uploading it, you need to update the host to match your APIM instance:
 > - Authentication is configured once at the tool level
 > - No premium connector license required
 
-#### 7.4 Test
+#### 7.4 Authorize the Connection
+
+The first time you test the REST API tool, the agent will prompt you to authorize the
+connection. This is a one-time setup:
+
+1. In the **Test your agent** panel, type something like "What are your loan rates?"
+2. The agent will respond with a message like:
+   > "Let's get you connected first... Open connection manager to verify your credentials."
+3. Click **Open connection manager**
+4. You'll see the connection for the Loan Rates API — enter your **APIM subscription key**
+   when prompted
+5. Click **Submit** (or **Connect**)
+6. Return to the test panel and click **Retry**
+
+> 💡 This only happens once. After the connection is authorized, the tool will call
+> the API automatically on future requests.
+
+#### 7.5 Test
 
 1. In the **Test your agent** panel on the right side of the screen,
    click the **+** icon at the top to start a new conversation
