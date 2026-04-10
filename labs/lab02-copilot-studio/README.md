@@ -103,30 +103,96 @@ Power Automate actions have something to query.
 
 #### 1.1 Create Dataverse Tables
 
-Open [Power Apps](https://make.powerapps.com) → select your environment → **Tables** → **New table**
+1. Open [https://make.powerapps.com](https://make.powerapps.com)
+2. In the **top-right**, click the environment picker and select your **developer environment**
+3. In the left navigation, click **Tables**
+4. Click **+ New table** → **New table**
 
-Create three tables:
+**Table 1: Banking Customers**
 
-| Table Name | Primary Column | Key Columns |
+5. Set the **Display name** to `Banking Customers`
+6. Set the **Primary column** display name to `Customer ID`
+7. Click **Save**
+8. Your table is created. Now add columns — click **+ New column** for each:
+
+| Display Name | Data Type | Required |
 |---|---|---|
-| **Banking Customers** | Customer ID | First Name, Last Name, Email, Phone, Street, City, State, Zip, Member Since |
-| **Banking Accounts** | Account ID | Customer ID (lookup), Account Type, Nickname, Last 4, Current Balance, Available Balance, Status |
-| **Banking Transactions** | Transaction ID | Account ID (lookup), Date, Description, Amount, Type, Category, Running Balance |
+| First Name | Single line of text | Yes |
+| Last Name | Single line of text | Yes |
+| Email | Single line of text | No |
+| Phone | Single line of text | No |
+| Street | Single line of text | No |
+| City | Single line of text | No |
+| State | Single line of text | No |
+| Zip | Single line of text | No |
+| Member Since | Date only | No |
 
-> 📖 Full column definitions are in [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
+9. Click **Save table** after adding all columns
+
+**Table 2: Banking Accounts**
+
+10. Go back to **Tables** → **+ New table** → **New table**
+11. Display name: `Banking Accounts`
+12. Primary column: `Account ID`
+13. Click **Save**, then add columns:
+
+| Display Name | Data Type | Required | Notes |
+|---|---|---|---|
+| Customer ID | Single line of text | Yes | For simplicity, use text (not a lookup) |
+| Account Type | Single line of text | Yes | Values: Checking, Savings, Certificate |
+| Nickname | Single line of text | No | |
+| Last 4 | Single line of text | No | |
+| Current Balance | Currency | No | |
+| Available Balance | Currency | No | |
+| Status | Single line of text | No | Values: Active, Inactive, Closed |
+| Opened Date | Date only | No | |
+
+14. Click **Save table**
+
+**Table 3: Banking Transactions**
+
+15. **Tables** → **+ New table** → **New table**
+16. Display name: `Banking Transactions`
+17. Primary column: `Transaction ID`
+18. Click **Save**, then add columns:
+
+| Display Name | Data Type | Required | Notes |
+|---|---|---|---|
+| Account ID | Single line of text | Yes | Matches Account ID in Banking Accounts |
+| Date | Date and time | Yes | |
+| Description | Single line of text | Yes | |
+| Amount | Currency | Yes | Negative for debits, positive for credits |
+| Type | Single line of text | No | Values: Credit, Debit |
+| Category | Single line of text | No | e.g., Income, Groceries, Utilities |
+| Running Balance | Currency | No | |
+
+19. Click **Save table**
+
+> 💡 **Note on lookup columns:** For this lab, we use simple text columns for Customer ID
+> and Account ID rather than Dataverse lookup relationships. This keeps the table creation
+> and data import simple. In production, you'd use proper lookup columns for referential
+> integrity.
 
 #### 1.2 Import Sample Data
 
-Use the JSON files in [`sample-data/`](sample-data/) to populate your tables:
+CSV files are provided in [`sample-data/`](sample-data/) for easy import.
 
-- **Option A:** Manually enter records via the Power Apps table editor
-- **Option B:** Use **Power Apps** → **Tables** → **Import data** (Excel/CSV export of the JSON)
-- **Option C:** Create a quick Power Automate flow that reads the JSON and inserts records
+**Import order matters** — import Customers first, then Accounts, then Transactions.
 
-Verify your data:
-- 3 customers
-- 7 accounts (distributed across customers)
-- 20 transactions (distributed across accounts)
+1. In Power Apps, go to **Tables** → click **Banking Customers**
+2. In the table toolbar, click the **▼ dropdown** next to "Edit" → **Import** → **Import data from Excel**
+3. Click **Upload** and select `sample-data/customers.csv`
+4. Review the column mapping — Power Apps will attempt to auto-map columns by name
+5. Fix any unmapped columns by clicking the column header and selecting the matching table column
+6. Click **Import**
+7. Wait for the import to complete, then verify: you should see **3 rows** in the table
+
+8. Repeat for **Banking Accounts** using `sample-data/accounts.csv` → verify **7 rows**
+9. Repeat for **Banking Transactions** using `sample-data/transactions.csv` → verify **20 rows**
+
+> ⚠️ **If the import option doesn't appear:** Some environments require you to go to
+> **Power Apps** → **Dataflows** → **Import data** instead. You can also manually enter
+> a few rows to test with — you don't need all 20 transactions to proceed.
 
 > 💡 **Tip:** Start with Customer **CUST-1001 (Alex Morgan)** who has the most accounts
 > and transactions for thorough testing.
@@ -138,15 +204,23 @@ Verify your data:
 #### 2.1 Open Copilot Studio
 
 1. Navigate to [https://copilotstudio.microsoft.com](https://copilotstudio.microsoft.com)
-2. Select your **non-production environment** from the environment picker (top right)
-3. Click **Create** → **New agent**
+2. In the **top-right**, click the environment name and select your **developer environment**
+   (the same one where you created your Dataverse tables)
+3. In the left navigation, click **Agents** (or **Create** on the home page)
+4. Click **+ New agent**
+5. You'll see an agent creation wizard — click **Skip to configure** (bottom left)
+   to go directly to the configuration page
+
+   > 💡 The wizard offers a chat-based setup experience. For this lab, skip it so you
+   > can configure everything manually and understand each setting.
 
 #### 2.2 Configure Agent Identity
 
-| Setting | Value |
-|---|---|
-| **Name** | Virtual Banking Assistant |
-| **Description** | A self-service agent that helps customers check balances, review transactions, list accounts, and view profile information. |
+On the agent configuration page:
+
+1. **Name:** Enter `Virtual Banking Assistant`
+2. **Description:** Enter `A self-service agent that helps customers check balances, review transactions, list accounts, and view profile information.`
+3. **Icon:** Optionally upload a custom icon (or leave the default)
 
 #### 2.3 Write Agent Instructions
 
@@ -154,7 +228,10 @@ The instructions are the **most important part** of a generative agent. They rep
 the rigid topic/trigger architecture with natural language guidance that tells the LLM
 how to behave, what it can and cannot do, and how to format responses.
 
-Paste the following into the **Instructions** field:
+1. On the agent configuration page, find the **Instructions** text box
+   (it's the large text area below the name and description)
+2. Clear any default text
+3. Paste the following:
 
 ```
 You are a Virtual Banking Assistant for a retail financial institution.
@@ -209,10 +286,19 @@ before taking action.
 
 #### 2.4 Configure Generative AI Settings
 
-1. Go to **Settings** → **Generative AI**
-2. Set orchestration to **Generative** (not Classic)
-3. Set the content moderation level to **Medium**
-4. Enable **Generative answers** for knowledge-grounded fallback
+1. In your agent, click **Settings** (gear icon in the top-right corner of the agent editor)
+2. In the Settings panel, click **Generative AI** in the left sidebar
+3. Under **How should your copilot interact with people?**, select **Generative** (not Classic)
+
+   > ⚠️ **This is critical.** If left on "Classic," the agent will use the traditional
+   > topic-trigger pattern instead of LLM-based orchestration. The entire lab depends
+   > on Generative mode being enabled.
+
+4. Under **Content moderation**, set to **Medium**
+5. Ensure **Allow the AI to use its own general knowledge** is toggled on (this enables
+   generative answers for questions not covered by your actions)
+6. Click **Save** at the top of the Settings panel
+7. Close the Settings panel to return to the agent editor
 
 ---
 
@@ -223,38 +309,55 @@ that don't require calling an action.
 
 #### 3.1 Create a Knowledge FAQ Document
 
-Create a simple FAQ document (Word or text file) with content like:
+First, create a file on your computer to upload as a knowledge source.
 
-> **What are your branch hours?**
-> Our branches are open Monday–Friday 9:00 AM to 5:00 PM, and Saturday 9:00 AM to 1:00 PM.
->
-> **How do I report a lost or stolen card?**
-> Call our 24/7 support line at 1-800-555-0199 immediately.
->
-> **What is the daily ATM withdrawal limit?**
-> The standard daily ATM withdrawal limit is $500. Contact us to request a temporary increase.
->
-> **How do I set up direct deposit?**
-> Provide your employer with your routing number (555-000-123) and your account number.
->
-> **How do I dispute a transaction?**
-> Contact our support team within 60 days of the transaction date. You can call
-> 1-800-555-0199 or visit any branch.
+1. Open **Notepad**, **Word**, or any text editor on your computer
+2. Create a new file called `banking-faq.docx` (or `.txt`) and paste the following content:
+
+```
+What are your branch hours?
+Our branches are open Monday–Friday 9:00 AM to 5:00 PM, and Saturday 9:00 AM to 1:00 PM.
+
+How do I report a lost or stolen card?
+Call our 24/7 support line at 1-800-555-0199 immediately.
+
+What is the daily ATM withdrawal limit?
+The standard daily ATM withdrawal limit is $500. Contact us to request a temporary increase.
+
+How do I set up direct deposit?
+Provide your employer with your routing number (555-000-123) and your account number.
+
+How do I dispute a transaction?
+Contact our support team within 60 days of the transaction date. You can call
+1-800-555-0199 or visit any branch.
+```
+
+3. Save the file to a location you can easily find (e.g., your Desktop)
 
 #### 3.2 Add to Copilot Studio
 
-1. In your agent, go to **Knowledge** → **+ Add knowledge**
-2. Upload the FAQ document (or add as a public website / SharePoint URL)
-3. Wait for the indexing to complete
+1. Return to [Copilot Studio](https://copilotstudio.microsoft.com) and open your **Virtual Banking Assistant** agent
+2. In the agent editor, click **Knowledge** in the top navigation bar
+3. Click **+ Add knowledge**
+4. In the panel that appears, select **Files** as the source type
+5. Click **Upload** and browse to the `banking-faq.docx` (or `.txt`) file you just created
+6. Click **Add** to upload the file
+7. Wait for the status to show **Ready** — this means the file has been indexed
+
+   > ⏱️ Indexing typically takes 1–2 minutes. You can continue working while it processes.
 
 #### 3.3 Test Generative Answers
 
-Open the **Test** panel and try questions from the FAQ:
+1. In the agent editor, click the **Test** button (bottom-left of the Copilot Studio screen,
+   or the chat bubble icon) to open the test panel
+2. Type the following messages one at a time and verify the agent responds correctly:
+
 - "What are your branch hours?"
 - "How do I report a stolen card?"
 - "What's the ATM limit?"
 
-✅ The agent should answer accurately, citing the knowledge source.
+✅ The agent should answer accurately, citing the knowledge source. If it says "I don't know,"
+verify the knowledge source shows **Ready** status in the Knowledge tab.
 
 ---
 
@@ -472,23 +575,38 @@ Instead of wiring actions into topic nodes, you register them as **plugin action
 
 #### 5.1 Add Each Flow as an Action
 
-1. In Copilot Studio, go to **Actions** → **+ Add an action**
-2. Select **Power Automate flow**
-3. Choose the flow
-4. Map input/output parameters
+For each of the four Dataverse flows you created in Step 4, register it as a plugin action:
 
-#### 5.2 Write Action Descriptions (Critical)
+1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Actions** in the top navigation bar
+3. Click **+ Add an action**
+4. In the panel that appears, you'll see categories. Click **Power Automate** (under "Choose an action")
+5. You'll see a list of flows available in your environment. Find **List Accounts** and click it
 
-The **description** is how the orchestrator knows when to call each action. Write them
-as if you're explaining to a colleague when this action should be used:
+   > ⚠️ **Don't see your flow?** Make sure:
+   > - You're in the same environment in Copilot Studio as where you created the flows
+   > - The flow uses the "Run a flow from Copilot" trigger
+   > - The flow has been saved (not just drafted)
 
-| Action Name | Description |
-|---|---|
-| **List Accounts** | Use this action to retrieve all bank accounts belonging to the authenticated customer. Returns account IDs, types (Checking, Savings, Certificate), nicknames, last 4 digits, current balances, available balances, and status. Call this first when the customer asks about any account — you need the account list to know what accounts they have. |
-| **Get Account Balance** | Use this action to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
-| **Get Recent Transactions** | Use this action to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
-| **Get Customer Profile** | Use this action to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
-| **Get Loan Rates** | Use this action to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options. |
+6. Copilot Studio will show the flow's inputs and outputs
+7. Review the **input parameters** — for List Accounts, you should see `CustomerID` (text)
+8. Review the **output parameters** — you should see the response body text
+9. Click **Next**
+
+**Configure the action description:**
+
+10. In the **Name** field, enter: `List Accounts`
+11. In the **Description** field, enter the description from the table below
+12. Click **Finish**
+
+**Repeat steps 3–12 for each remaining flow:**
+
+| Flow | Action Name | Description |
+|---|---|---|
+| **List Accounts** | List Accounts | Use this action to retrieve all bank accounts belonging to the authenticated customer. Returns account IDs, types (Checking, Savings, Certificate), nicknames, last 4 digits, current balances, available balances, and status. Call this first when the customer asks about any account — you need the account list to know what accounts they have. |
+| **Get Account Balance** | Get Account Balance | Use this action to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
+| **Get Recent Transactions** | Get Recent Transactions | Use this action to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
+| **Get Customer Profile** | Get Customer Profile | Use this action to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
 
 > 💡 **Why descriptions matter so much:** In generative orchestration, the LLM reads every
 > action description on each turn to decide which action (if any) to call. Vague descriptions
@@ -496,9 +614,25 @@ as if you're explaining to a colleague when this action should be used:
 > **when** to use the action and **what it returns** give the LLM the context to make
 > good decisions.
 
+#### 5.2 Verify Actions Are Enabled
+
+After adding all four actions, verify them:
+
+1. Click **Actions** in the top navigation bar
+2. You should see all four actions listed
+3. Each action should show a green **On** status toggle — if any are off, click the toggle to enable them
+4. Click on any action to review its description and parameters
+
 #### 5.3 Configure Adaptive Card Responses
 
-For each action, configure the output to use the corresponding adaptive card template:
+For each action, you can configure the output to use adaptive card templates so the
+agent displays rich, formatted cards instead of plain text.
+
+> 💡 **Note:** Adaptive card output formatting is configured in the **action's output settings**
+> within Copilot Studio. Click on an action → **Output** → choose how to format the response.
+> The card templates are in the [`adaptive-cards/`](adaptive-cards/) folder for reference.
+> In some configurations, you may need to use a **Send a message** node in a topic to render
+> the card. See the [Adaptive Cards documentation](https://learn.microsoft.com/en-us/microsoft-copilot-studio/authoring-send-message#add-an-adaptive-card) for details.
 
 | Action | Adaptive Card |
 |---|---|
@@ -520,13 +654,41 @@ conversation flow. Topics serve only as **guardrails** for specific edge cases.
 
 #### 6.1 System Topics (Review Defaults)
 
-Review the built-in system topics and ensure they're configured:
+System topics are built-in topics that handle common conversational scenarios. You need
+to review them to make sure they're configured correctly for generative orchestration.
 
-| System Topic | Configuration |
-|---|---|
-| **Greeting** | Let the generative orchestrator handle it using your agent instructions. Alternatively, add a simple welcome message (see topic guide). |
-| **Fallback** | Generative answers enabled as first response. If knowledge sources can't answer, offer human escalation. |
-| **Escalation** | "Let me connect you with a human agent." + handoff if configured. |
+1. Open your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Topics** in the top navigation bar
+3. At the top, you'll see two tabs: **Custom** and **System**
+4. Click the **System** tab to view built-in system topics
+
+Review and configure each:
+
+**Greeting:**
+1. Click on the **Greeting** topic
+2. You'll see a flow editor with a trigger and message node
+3. For generative orchestration, you have two options:
+   - **Option A (recommended):** Leave it as-is — the generative orchestrator will use
+     your agent instructions to craft a greeting
+   - **Option B:** Edit the message to something simple like:
+     "👋 Welcome to the Virtual Banking Assistant! I can help you check balances,
+     view transactions, list your accounts, or look up your profile. Just ask!"
+4. Click **Save** if you made changes
+
+**Fallback:**
+1. Click on the **Fallback** topic
+2. This topic fires when the orchestrator can't determine the user's intent
+3. Ensure it has a message like: "I'm not sure how to help with that. Could you rephrase,
+   or would you like me to connect you with a human agent?"
+4. Click **Save** if you made changes
+
+**Escalation:**
+1. Click on the **Escalation** topic
+2. This handles requests to talk to a human
+3. Ensure it has a message like: "Let me connect you with a human agent."
+4. If you have a handoff channel configured (e.g., Omnichannel for Customer Service),
+   add a **Transfer conversation** node. For this lab, a message is sufficient.
+5. Click **Save** if you made changes
 
 #### 6.2 Optional: Welcome Topic
 
@@ -570,30 +732,109 @@ Consumption tier.
 
 #### 7.2 Create the Power Automate Flow
 
-1. Open Power Automate → **New** → **Instant cloud flow**
-2. Trigger: **Run a flow from Copilot** (no input parameters needed)
-3. Add action: **HTTP**
-   - Method: `GET`
-   - URI: `https://<apim-name>.azure-api.net/loans/rates`
-   - Headers:
-     - `Ocp-Apim-Subscription-Key`: your subscription key
-4. Add action: **Parse JSON** — parse the HTTP response body
-5. Add action: **Respond to Copilot** — return the parsed loan rates
+1. Open [https://make.powerautomate.com](https://make.powerautomate.com)
+2. Confirm your **developer environment** is selected (top-right environment picker)
+3. In the left nav, click **My flows**
+4. Click **+ New flow** → **Instant cloud flow**
+5. Name: `Get Loan Rates`
+6. Trigger: select **Run a flow from Copilot** (no input parameters needed for this flow)
+7. Click **Create**
+
+**Add the HTTP action:**
+
+8. Click **+ New step** (or the **+** button below the trigger)
+9. Search for `HTTP` in the action search box
+10. Select **HTTP** (the built-in premium connector)
+
+    > ⚠️ **Premium connector note:** The HTTP connector requires a premium license. In trial
+    > and developer environments, this is typically included. If you see a license error,
+    > ask your facilitator for a workaround.
+
+11. Configure the HTTP action:
+    - **Method:** `GET`
+    - **URI:** Paste the APIM endpoint URL provided by your facilitator, e.g.:
+      `https://<apim-name>.azure-api.net/loans/rates`
+    - **Headers:** Click **+ Add new item** and add:
+      - **Key:** `Ocp-Apim-Subscription-Key`
+      - **Value:** Paste the subscription key provided by your facilitator
+
+**Parse the response:**
+
+12. Click **+ New step**
+13. Search for `Parse JSON` and select it
+14. In the **Content** field, click it, then select the **Dynamic content** tab, and choose **Body** (from the HTTP step)
+15. In the **Schema** field, paste the following schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "rates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product": { "type": "string" },
+          "minAPR": { "type": "number" },
+          "maxAPR": { "type": "number" },
+          "term": { "type": "string" }
+        }
+      }
+    },
+    "effectiveDate": { "type": "string" },
+    "disclaimer": { "type": "string" }
+  }
+}
+```
+
+**Return the result to Copilot:**
+
+16. Click **+ New step**
+17. Search for `Respond to Copilot` and select **Respond to Copilot**
+18. Click **+ Add an output** → select **Text**
+19. In **Enter a title**, type: `LoanRatesJSON`
+20. In the **Enter a value to respond** field, click the field, switch to the **Expression** tab, and enter:
+    ```
+    string(body('Parse_JSON'))
+    ```
+21. Click **OK** to insert the expression
+22. Click **Save** (top-right)
+23. Click **Test** → **Manually** → **Run** to verify the flow executes successfully
+
+    > ⚠️ If the test fails with a 401 or 403 error, double-check your APIM subscription key.
+    > If it fails with a connection error, ensure the APIM endpoint URL is correct.
 
 #### 7.3 Register as an Action
 
-Register this flow in Copilot Studio as the **Get Loan Rates** action (description
-already defined in Step 5).
+1. Return to your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Actions** in the top navigation bar
+3. Click **+ Add an action**
+4. Select **Power Automate** → find and click **Get Loan Rates**
+5. This flow has no input parameters, so just review the output
+6. Click **Next**
+7. Set the **Name** to: `Get Loan Rates`
+8. Set the **Description** to: `Use this action to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options.`
+9. Click **Finish**
+10. Verify the action appears in your Actions list with a green **On** toggle
 
 #### 7.4 Test
 
-Try in the test panel:
+1. In Copilot Studio, open the **Test** panel (bottom-left chat bubble icon)
+2. Click **Reset** (circular arrow icon at the top of the test panel) to start a fresh conversation
+3. Type the following messages one at a time:
+
 - "What are your current loan rates?"
 - "How much is a car loan?"
 - "What's the mortgage rate?"
 
-The orchestrator should call the HTTP-based action and display rates in the
-[`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) adaptive card.
+4. For each, verify:
+   - The agent calls the **Get Loan Rates** action (you'll see it in the conversation trace)
+   - The response includes rate information for the requested product
+   - If you configured adaptive cards, the [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) card renders
+
+> 💡 **To see the conversation trace:** In the test panel, look for a small info icon or
+> expandable section under each agent response. Click it to see which action was called
+> and the raw input/output data.
 
 #### Why This Matters
 
@@ -624,12 +865,26 @@ build and host the loan payment calculator MCP server. Options:
 
 #### 8.2 Register the MCP Server in Copilot Studio
 
-1. In Copilot Studio, go to **Actions** → **+ Add an action**
-2. Select **MCP Server** (Model Context Protocol)
-3. Enter the MCP server endpoint URL
-4. Copilot Studio discovers the `calculate_loan_payment` tool automatically
-5. Review the tool's description and parameter schema
-6. Enable the tool and save
+1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Actions** in the top navigation bar
+3. Click **+ Add an action**
+4. In the action type panel, look for **MCP Server** (Model Context Protocol)
+
+   > 💡 **Note on MCP support:** MCP integration in Copilot Studio may be in preview.
+   > If you don't see an "MCP Server" option, check [Copilot Studio release notes](https://learn.microsoft.com/en-us/microsoft-copilot-studio/whats-new)
+   > for the latest availability. As an alternative, you can call the MCP server via
+   > a Power Automate HTTP flow (same pattern as Step 7) pointing to the MCP server's
+   > HTTP endpoint.
+
+5. Enter the **MCP server endpoint URL** provided by your facilitator (or the URL of the
+   server you deployed in Step 8.1), e.g.:
+   `https://<your-app>.azurecontainerapps.io/sse`
+6. Copilot Studio will connect to the server and **discover tools automatically** — you should
+   see `calculate_loan_payment` appear in the tool list
+7. Review the tool's **description** and **parameter schema** — these come from the MCP server's
+   tool manifest (you don't need to write them like you did for Power Automate actions)
+8. Enable the tool by toggling it **On**
+9. Click **Save**
 
 > 💡 **Key difference from Power Automate actions:** You don't write the action description —
 > it comes from the MCP server's tool manifest. The server declares what it can do, and
@@ -637,15 +892,19 @@ build and host the loan payment calculator MCP server. Options:
 
 #### 8.3 Test
 
-Try in the test panel:
+1. In Copilot Studio, open the **Test** panel (bottom-left chat bubble icon)
+2. Click **Reset** (circular arrow icon) to start a fresh conversation
+3. Type the following messages one at a time and verify the agent calls the MCP tool:
+
 - "What would my payments be on a $25,000 car loan at 5.25% for 5 years?"
 - "Calculate payments for a $300,000 mortgage at 6.5% for 30 years"
 - "If I borrow 15 thousand at 10 percent for 3 years, what's the monthly?"
 
-The orchestrator should:
-1. Extract principal, rate, and term from the user's message
-2. Call the MCP `calculate_loan_payment` tool
-3. Display results in the [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) card
+4. For each, verify in the conversation trace:
+   - The orchestrator **extracted** the principal, rate, and term from natural language
+   - It called the MCP `calculate_loan_payment` tool (not a Power Automate flow)
+   - The response includes monthly payment, total interest, and total cost
+   - If configured, the [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) card renders
 
 #### 8.4 Test the Combined Flow (Rates → Calculator)
 
@@ -668,8 +927,24 @@ MCP is an emerging open standard that enables:
 
 ### Step 9: Test the Complete Agent
 
-This is where you'll see the power of generative orchestration — the agent handles
-natural variations, multi-turn conversations, and edge cases without explicit topic flows.
+Now that all actions are registered (4 Dataverse + 1 HTTP + 1 MCP), test the agent
+end-to-end. This is where you'll see the power of generative orchestration — the agent
+handles natural variations, multi-turn conversations, and edge cases without explicit
+topic flows.
+
+#### 9.0 Open the Test Panel
+
+1. Open your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click the **Test** button (bottom-left of the screen — it's a chat bubble icon)
+3. Click **Reset** (circular arrow icon at the top of the test panel) to ensure a fresh session
+4. For each test below, type the message in the test panel and verify the expected behavior
+
+> 💡 **Viewing the trace:** After each agent response, look for an expandable section
+> or info icon below the response. Click it to see:
+> - Which action (if any) was called
+> - The input parameters sent to the action
+> - The raw output received
+> This is invaluable for debugging routing issues.
 
 #### 9.1 Basic Capability Tests
 
@@ -740,37 +1015,101 @@ If the LLM calls the wrong action or doesn't call any:
 
 ### Step 10: Publish to Microsoft Teams
 
-#### 10.1 Configure the Teams Channel
+Once testing is complete, publish the agent to Microsoft Teams so users can interact
+with it in a familiar chat interface.
 
-1. In Copilot Studio, go to **Channels**
-2. Click **Microsoft Teams**
-3. Review the configuration (name, icon, description)
-4. Click **Turn on Teams**
+#### 10.1 Publish the Agent
 
-#### 10.2 Publish
+Before configuring channels, you need to publish the latest version of your agent:
 
-1. Go to **Publish** → click **Publish**
-2. Wait for the publishing process to complete
-3. Open the Teams link provided by Copilot Studio
+1. Open your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Publish** in the top-right corner of the agent editor
+3. Click **Publish** again in the confirmation dialog
+4. Wait for the publishing process to complete — you'll see a green "Published" status
+
+   > ⏱️ Publishing typically takes 1–3 minutes. You can proceed to configure the Teams
+   > channel while it publishes.
+
+#### 10.2 Configure the Teams Channel
+
+1. In your agent, click **Channels** in the left sidebar (or navigation bar)
+2. Under **Messaging**, find and click **Microsoft Teams**
+3. Review the configuration:
+   - **Agent name** — how it appears in Teams (defaults to your agent name)
+   - **Icon** — optionally upload a custom icon
+   - **Description** — appears when users search for the agent
+4. Click **Turn on Teams** (or **Add** if shown)
+5. You'll see a confirmation with a link to open the agent in Teams
 
 #### 10.3 Test in Teams
 
-1. Open Microsoft Teams
-2. Find the agent in your chat list (or use the link from publish)
-1. Run through all test scenarios from Step 9
-4. Verify adaptive cards render correctly in the Teams client
+1. Click the **Open in Teams** link from Copilot Studio, or:
+   - Open **Microsoft Teams** (desktop or web)
+   - Go to the **Chat** section
+   - Click **+ New chat** and search for your agent name "Virtual Banking Assistant"
+   - Alternatively, look for the agent in the **Apps** section of Teams
+2. Start a conversation with the agent
+3. Run through the key test scenarios from Step 9:
+   - "What accounts do I have?"
+   - "Show me my checking balance"
+   - "What are your loan rates?"
+   - "Calculate a $20,000 loan at 6% for 4 years"
+4. Verify:
+   - The agent responds correctly to each query
+   - Adaptive cards render properly in the Teams chat window
+   - Multi-turn context is maintained between messages
 
 > 💡 **Tip:** Adaptive cards may render slightly differently in Teams vs the Copilot Studio
 > test panel. Always validate in Teams before considering the lab complete.
+>
+> ⚠️ **If the agent doesn't appear in Teams:** Make sure publishing completed successfully
+> in Copilot Studio. Also ensure you're signed into Teams with the same tenant as your
+> Copilot Studio environment.
 
 ---
 
 ### Step 11: Export and Save
 
-1. Go to **Solutions** in Power Apps
-2. Find the solution containing your agent
-3. **Export** as a managed or unmanaged solution (`.zip`)
-4. Save the exported solution to this lab folder for reference
+Export your completed agent as a Power Platform solution file. This is how agents are
+moved between environments (dev → test → production) in real projects.
+
+#### 11.1 Find Your Solution
+
+1. Open [https://make.powerapps.com](https://make.powerapps.com)
+2. Confirm your **developer environment** is selected (top-right environment picker)
+3. In the left navigation, click **Solutions**
+4. Look for the solution that contains your agent. If you built the agent in Copilot Studio,
+   it's typically in a solution named after your agent or in the **Default Solution**
+5. If you don't see it in the list, try clicking **Managed** or **All** tabs to change
+   the view filter
+
+   > 💡 **Tip:** If your agent isn't in a dedicated solution, you can create one:
+   > Click **+ New solution** → name it "Virtual Banking Assistant" → select a publisher →
+   > click **Create**. Then open the solution and click **Add existing** → **Agent** to
+   > include your Copilot Studio agent.
+
+#### 11.2 Export the Solution
+
+1. Click the **checkbox** next to your solution to select it
+2. Click **Export** in the top toolbar
+3. You'll see an export wizard:
+   - **Publish before export:** Click **Next** (this ensures you export the latest version)
+   - **Export as:** Select **Unmanaged** (for lab purposes — unmanaged allows you to
+     re-import and edit; managed is for production deployments where changes are locked)
+   - Click **Export**
+4. Wait for the export to complete — this may take 1–2 minutes
+5. Your browser will download a `.zip` file (e.g., `VirtualBankingAssistant_1_0_0_0.zip`)
+
+#### 11.3 Save for Reference
+
+1. Save the exported `.zip` file to a known location on your computer
+2. Optionally, place a copy in this lab folder for reference:
+   `labs/lab02-copilot-studio/exported-solution/`
+
+> 💡 **What's in the solution file?** The `.zip` contains XML definitions of your agent,
+> its topics, actions, knowledge sources, and any related components. This is the artifact
+> you'd check into source control and deploy through ALM pipelines in a real project.
+> Lab 04 (CI/CD and ALM) will cover this in detail.
 
 ---
 
