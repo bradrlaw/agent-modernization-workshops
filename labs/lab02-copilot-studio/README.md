@@ -208,9 +208,8 @@ CSV files are provided in [`sample-data/`](sample-data/) for easy import.
 1. Navigate to [https://copilotstudio.microsoft.com](https://copilotstudio.microsoft.com)
 2. In the **top-right**, click the environment name and select your **developer environment**
    (the same one where you created your Dataverse tables)
-3. In the left navigation, click **Agents** (or **Create** on the home page)
-4. Click **+ New agent**
-5. You'll see an agent creation wizard — click **Skip to configure** (bottom left)
+3. On the **Home** page, click **Create an agent** (or **+ Create** depending on your UI version)
+4. You'll see an agent creation wizard — click **Skip to configure** (bottom left)
    to go directly to the configuration page
 
    > 💡 The wizard offers a chat-based setup experience. For this lab, skip it so you
