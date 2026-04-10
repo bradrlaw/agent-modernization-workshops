@@ -300,7 +300,7 @@ before taking action.
    financial services agent, you want responses grounded only in your knowledge sources
    and actions, not the LLM's general training data. Leaving this on could lead to
    inaccurate or inappropriate answers outside the agent's purpose.
-6. Click **Save** at the top of the Settings panel
+6. Click **Save** at the bottom of the Settings panel
 7. Close the Settings panel to return to the agent editor
 
 ---
