@@ -295,7 +295,7 @@ before taking action.
    > topic-trigger pattern instead of LLM-based orchestration. The entire lab depends
    > on Generative mode being enabled.
 
-4. Under **Content moderation**, set to **Medium**
+4. Under **Content moderation**, set to **Moderate**
 5. Ensure **Allow the AI to use its own general knowledge** is toggled on (this enables
    generative answers for questions not covered by your actions)
 6. Click **Save** at the top of the Settings panel
