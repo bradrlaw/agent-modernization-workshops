@@ -1,0 +1,32 @@
+{
+  "name": "Agent Modernization Workshops",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-azurefunctions",
+        "ms-vscode.azure-account",
+        "ms-azuretools.vscode-bicep",
+        "ms-python.python",
+        "ms-dotnettools.csdevkit",
+        "TeamsDevApp.ms-teams-vscode-extension"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "echo 'Dev container ready. Run validate-environment scripts to check prerequisites.'"
+}
