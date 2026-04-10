@@ -300,8 +300,11 @@ before taking action.
    financial services agent, you want responses grounded only in your knowledge sources
    and actions, not the LLM's general training data. Leaving this on could lead to
    inaccurate or inappropriate answers outside the agent's purpose.
-6. Click **Save** at the bottom of the Settings panel
-7. Close the Settings panel to return to the agent editor
+6. Ensure **Web Search** is toggled **off** — with this enabled, the agent may pull in
+   information from the public internet that is not part of your curated knowledge sources.
+   For a financial services agent, all responses should come from your own data and documents.
+7. Click **Save** at the bottom of the Settings panel
+8. Close the Settings panel to return to the agent editor
 
 ---
 
