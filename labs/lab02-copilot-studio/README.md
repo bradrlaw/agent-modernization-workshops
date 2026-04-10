@@ -621,31 +621,32 @@ After adding all four tools, verify them:
 3. Each tool should show a green **On** status toggle — if any are off, click the toggle to enable them
 4. Click on any tool to review its description and parameters
 
-#### 5.3 Configure Adaptive Card Responses
+#### 5.3 Configure Tool Completion (Response Behavior)
 
-For each tool, you can configure the output to display an adaptive card instead of
-plain text. This is done in the tool's **Completion** settings.
+For each tool, you can configure what happens after the tool finishes running. This is
+done in the tool's **Completion** section.
 
 1. Click **Tools** in the top navigation bar
 2. Click on a tool (e.g., **List Accounts**) to open its configuration
 3. Scroll down to the **Completion** section:
    - You'll see the label: **"Specify what your agent does when it finishes using this tool."**
-   - In the **After running** dropdown, select **Send an Adaptive Card**
-   - Paste the contents of the corresponding adaptive card JSON template (see table below)
+   - In the **After running** dropdown, select **Don't respond** (this is the default)
 4. Click **Save**
 5. Repeat for each tool
 
-| Tool | Adaptive Card Template |
-|---|---|
-| List Accounts | [`account-list-card.json`](adaptive-cards/account-list-card.json) |
-| Get Account Balance | [`account-balance-card.json`](adaptive-cards/account-balance-card.json) |
-| Get Recent Transactions | [`transaction-list-card.json`](adaptive-cards/transaction-list-card.json) |
-| Get Customer Profile | [`customer-profile-card.json`](adaptive-cards/customer-profile-card.json) |
-| Get Loan Rates | [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) |
-| Calculate Loan Payment (MCP) | [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) |
+With **Don't respond**, the LLM incorporates the tool's output into its own generated
+response. The agent reads the JSON data returned by the flow and crafts a natural
+language answer for the user. This aligns with the LLM-first approach — the orchestrator
+decides how to present the data based on the conversation context.
 
-> 💡 **Tip:** You can preview and edit adaptive cards at
-> [adaptivecards.io/designer](https://adaptivecards.io/designer/) before pasting them in.
+> 💡 **Other completion options available:**
+> - **Write the response with generative AI** — explicitly lets AI craft a response
+> - **Send specific response** — author a templated response with variable insertion
+> - **Send an adaptive card** — create rich, interactive card responses using Power Fx formulas
+>
+> Adaptive card templates are included in the [`adaptive-cards/`](adaptive-cards/) folder
+> for future use. Configuring them requires mapping tool output variables to card fields
+> using Power Fx in the formula card editor — this is covered as an advanced exercise.
 
 ---
 
@@ -1129,8 +1130,8 @@ moved between environments (dev → test → production) in real projects.
 - [ ] 4 Power Automate flows for Dataverse actions (List Accounts, Get Balance, Get Transactions, Get Profile)
 - [ ] 1 Power Automate flow calling external API via HTTP connector (Get Loan Rates via APIM)
 - [ ] MCP server deployed and registered (Loan Payment Calculator)
-- [ ] All actions registered with LLM-optimized descriptions
-- [ ] Adaptive cards displaying financial data correctly (6 card templates)
+- [ ] All tools registered with LLM-optimized descriptions
+- [ ] Tool completion set to "Don't respond" (LLM generates natural responses from tool output)
 - [ ] Multi-turn and cross-tool chaining tested (rates → calculator flow)
 - [ ] Guardrails tested (refuses modifications, no cross-customer data, no financial advice)
 - [ ] Agent published and tested in Microsoft Teams
