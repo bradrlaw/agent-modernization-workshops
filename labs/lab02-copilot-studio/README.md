@@ -491,7 +491,7 @@ This flow returns recent transactions for a specific account with summary totals
 7. Configure:
     - **Table name:** Banking Transactions
     - Click **Show advanced options**
-    - **Filter rows:** `cr_accountid eq '@{triggerBody()['number']}'`
+    - **Filter rows:** `cr_accountid eq '@{triggerBody()['text']}'`
 
       > Adjust the column name to match your schema. Use the Account ID column name.
 
@@ -623,16 +623,19 @@ After adding all four tools, verify them:
 
 #### 5.3 Configure Adaptive Card Responses
 
-For each tool, you can configure the output to use adaptive card templates so the
-agent displays rich, formatted cards instead of plain text.
+For each tool, you can configure the output to display an adaptive card instead of
+plain text. This is done in the tool's **Completion** settings.
 
-> 💡 **Note:** Adaptive card output formatting is configured in the **tool's output settings**
-> within Copilot Studio. Click on a tool → **Output** → choose how to format the response.
-> The card templates are in the [`adaptive-cards/`](adaptive-cards/) folder for reference.
-> In some configurations, you may need to use a **Send a message** node in a topic to render
-> the card. See the [Adaptive Cards documentation](https://learn.microsoft.com/en-us/microsoft-copilot-studio/authoring-send-message#add-an-adaptive-card) for details.
+1. Click **Tools** in the top navigation bar
+2. Click on a tool (e.g., **List Accounts**) to open its configuration
+3. Scroll down to the **Completion** section:
+   - You'll see the label: **"Specify what your agent does when it finishes using this tool."**
+   - In the **After running** dropdown, select **Send an Adaptive Card**
+   - Paste the contents of the corresponding adaptive card JSON template (see table below)
+4. Click **Save**
+5. Repeat for each tool
 
-| Tool | Adaptive Card |
+| Tool | Adaptive Card Template |
 |---|---|
 | List Accounts | [`account-list-card.json`](adaptive-cards/account-list-card.json) |
 | Get Account Balance | [`account-balance-card.json`](adaptive-cards/account-balance-card.json) |
@@ -640,6 +643,9 @@ agent displays rich, formatted cards instead of plain text.
 | Get Customer Profile | [`customer-profile-card.json`](adaptive-cards/customer-profile-card.json) |
 | Get Loan Rates | [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) |
 | Calculate Loan Payment (MCP) | [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) |
+
+> 💡 **Tip:** You can preview and edit adaptive cards at
+> [adaptivecards.io/designer](https://adaptivecards.io/designer/) before pasting them in.
 
 ---
 
