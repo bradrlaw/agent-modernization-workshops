@@ -669,15 +669,12 @@ to review them to make sure they're configured correctly for generative orchestr
 
 Review and configure each:
 
-**Greeting:**
-1. Click on the **Greeting** topic
-2. You'll see a flow editor with a trigger and message node
-3. For generative orchestration, you have two options:
-   - **Option A (recommended):** Leave it as-is — the generative orchestrator will use
-     your agent instructions to craft a greeting
-   - **Option B:** Edit the message to something simple like:
-     "👋 Welcome to the Virtual Banking Assistant! I can help you check balances,
-     view transactions, list your accounts, or look up your profile. Just ask!"
+**Conversation Start:**
+1. Click on the **Conversation Start** topic
+2. This fires when a user first opens the chat — it handles the welcome/greeting
+3. You can customize the greeting message or leave the default. For example:
+   "👋 Welcome to the Virtual Banking Assistant! I can help you check balances,
+   view transactions, list your accounts, or look up your profile. Just ask!"
 4. Click **Save** if you made changes
 
 **Fallback:**
@@ -695,26 +692,16 @@ Review and configure each:
    add a **Transfer conversation** node. For this lab, a message is sufficient.
 5. Click **Save** if you made changes
 
-#### 6.2 Optional: Welcome Topic
-
-You may optionally create a single Welcome topic that displays a brief greeting when
-the user first connects. This is useful for setting expectations:
-
-> 👋 Welcome to the Virtual Banking Assistant! I can help you check balances, view
-> transactions, list your accounts, or look up your profile. Just ask!
-
-This is the **only custom topic** you should need. Everything else is handled by
-the orchestrator + actions.
-
-#### 6.3 What You Should NOT Create
+#### 6.2 What You Should NOT Create
 
 In generative orchestration mode, **do not** create:
 - ❌ Individual topics for "Check Balance", "View Transactions", etc.
 - ❌ Trigger phrases per capability
 - ❌ Question nodes with hardcoded disambiguation choices
 - ❌ Manual branching / condition nodes for routing
+- ❌ A custom Welcome topic — the **Conversation Start** system topic already handles this
 
-The LLM handles all of this based on your instructions and tool descriptions.
+The LLM handles routing based on your instructions and tool descriptions.
 
 ---
 
