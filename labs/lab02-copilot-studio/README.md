@@ -878,7 +878,7 @@ URL. Skip to 8.2.
 4. Verify it's running — you should see:
    ```
    MCP Loan Calculator Server running on http://localhost:3000
-   SSE endpoint: http://localhost:3000/sse
+   Endpoint: http://localhost:3000/mcp
    ```
 5. Open a **new terminal** (keep the server running) and verify:
    ```bash
@@ -903,9 +903,9 @@ URL. Skip to 8.2.
    Connect via browser: https://abc123xyz.usw2.devtunnels.ms
    Hosting port: 3000
    ```
-9. **Copy the tunnel URL**. Your MCP SSE endpoint is:
+9. **Copy the tunnel URL**. Your MCP endpoint is:
    ```
-   https://abc123xyz-3000.usw2.devtunnels.ms/sse
+   https://abc123xyz-3000.usw2.devtunnels.ms/mcp
    ```
 
 > ⚠️ **Keep both terminals open** — the MCP server terminal and the dev tunnel terminal.
@@ -922,17 +922,16 @@ URL. Skip to 8.2.
    > If you don't see this option, check [Copilot Studio release notes](https://learn.microsoft.com/en-us/microsoft-copilot-studio/whats-new)
    > for the latest availability.
 
-5. Enter the **MCP server endpoint URL**:
-   - If using Dev Tunnels: `https://abc123xyz-3000.usw2.devtunnels.ms/sse`
-     (use your actual tunnel URL from Step 8.1)
-   - If facilitator-provided: paste the URL given to you
-6. Click **Connect** (or **Next**)
-7. Copilot Studio will connect to the server and **discover tools automatically** — you should
-   see `calculate_loan_payment` appear in the tool list
-8. Review the tool's **description** and **parameter schema** — these come from the MCP
-   server's tool manifest (you don't need to write them like you did for Dataverse tools)
-9. Select the `calculate_loan_payment` tool to enable it
-10. Click **Add and configure** to add the tool to your agent
+5. Fill in the fields:
+   - **Server name**: `Loan Calculator`
+   - **Server description**: `Calculates monthly payment, total interest, and total cost for a loan`
+   - **Server URL**: Your tunnel URL + `/mcp` (e.g., `https://abc123xyz-3000.usw2.devtunnels.ms/mcp`)
+   - **Authentication**: `None`
+6. Click **Create**
+7. On the **Add tool** dialog, click **Create a new connection**, then **Add to agent**
+8. Copilot Studio connects to the server and **discovers tools automatically** — you should
+   see `calculate_loan_payment` appear
+9. Select the `calculate_loan_payment` tool and add it to your agent
 
 > 💡 **Key difference from other tools:** You don't write the tool description — it comes
 > from the MCP server's tool manifest. The server declares what it can do, and Copilot
@@ -1191,7 +1190,7 @@ moved between environments (dev → test → production) in real projects.
 | Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
 | Power Automate flow not appearing | Ensure the flow uses the "When an agent calls the flow" trigger and is in the same environment || Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
 | REST API tool returns 401/403 | Verify APIM subscription key is correct in the tool's connection settings |
-| MCP tool not discovered | Check the MCP server endpoint is accessible; verify SSE transport is configured |
+| MCP tool not discovered | Verify the server mirrors the client's `protocolVersion` in the initialize response; ensure endpoint returns `application/json` (not SSE) |
 | MCP tool called but returns error | Test the MCP server independently with the MCP Inspector |
 | Adaptive card not rendering | Validate JSON at [adaptivecards.io/designer](https://adaptivecards.io/designer/) |
 | Agent provides financial advice | Strengthen the security/boundaries section of your instructions |

@@ -3,6 +3,9 @@
 A ready-to-run MCP server that exposes a **loan payment calculator** tool for use
 with Copilot Studio (or any MCP-compatible agent).
 
+Uses the **Streamable HTTP** transport — a single `/mcp` endpoint handles all
+JSON-RPC messages. No SDK required; pure Express handling raw MCP protocol.
+
 ## Quick Start
 
 ### Prerequisites
@@ -26,7 +29,7 @@ npm start
 You should see:
 ```
 MCP Loan Calculator Server running on http://localhost:3000
-SSE endpoint: http://localhost:3000/sse
+Endpoint: http://localhost:3000/mcp
 Health check: http://localhost:3000/health
 ```
 
@@ -79,13 +82,21 @@ Inspect network activity: https://abc123xyz-3000.usw2.devtunnels.ms
 Hosting port: 3000
 ```
 
-**Copy the tunnel URL** — you'll need it for Copilot Studio. Your MCP SSE endpoint is:
+**Copy the tunnel URL** — you'll need it for Copilot Studio. Your MCP endpoint is:
 ```
-https://abc123xyz-3000.usw2.devtunnels.ms/sse
+https://abc123xyz-3000.usw2.devtunnels.ms/mcp
 ```
 
 > ⚠️ **Keep this terminal open** — closing it stops the tunnel. The MCP server and
 > dev tunnel must both be running for Copilot Studio to connect.
+
+## Architecture Notes
+
+This server implements the MCP Streamable HTTP transport without using the MCP SDK.
+The reason: **Copilot Studio negotiates protocol version `2024-11-05`**, while the
+official MCP SDK responds with `2025-03-26`. This version mismatch causes Copilot
+Studio to ignore discovered tools. By handling the JSON-RPC messages directly, the
+server mirrors the client's protocol version and returns clean JSON responses.
 
 ## Tool: calculate_loan_payment
 
