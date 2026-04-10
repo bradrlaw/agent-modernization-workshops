@@ -842,46 +842,101 @@ authentication policies, and monitoring without changing the backend.
 ### Step 8: Add MCP Tool (Loan Payment Calculator)
 
 This step demonstrates connecting Copilot Studio to a **Model Context Protocol (MCP)**
-server — an open standard for exposing tools to AI agents. Unlike Power Automate actions,
-MCP tools are **discovered dynamically** by the agent from the server's tool manifest.
+server — an open standard for exposing tools to AI agents. Unlike Power Automate tools
+or REST API tools, MCP tools are **discovered dynamically** by the agent from the
+server's tool manifest.
 
-> 📖 Full MCP server setup: [`flows/mcp-server-setup.md`](flows/mcp-server-setup.md)
+> 📖 Detailed reference: [`flows/mcp-server-setup.md`](flows/mcp-server-setup.md)
 
-#### 8.1 Set Up the MCP Server (or Get the Endpoint)
+#### 8.1 Set Up the MCP Server
 
 **If facilitator-led:** Your workshop facilitator will provide the MCP server endpoint
 URL. Skip to 8.2.
 
-**If self-paced:** Follow [`flows/mcp-server-setup.md`](flows/mcp-server-setup.md) to
-build and host the loan payment calculator MCP server. Options:
-- **Node.js** or **Python** implementation
-- Host on Azure Container Apps, or use Dev Tunnels for local testing
+**If self-paced:** A ready-to-run MCP server is included in this lab at
+[`mcp-loan-calculator/`](mcp-loan-calculator/). Follow these steps:
+
+**Prerequisites:**
+- [Node.js](https://nodejs.org/) v18 or later installed
+- [Dev Tunnels CLI](https://learn.microsoft.com/en-us/azure/developer/dev-tunnels/get-started)
+  installed (`winget install Microsoft.devtunnel`)
+
+**Install and start the server:**
+
+1. Open a terminal and navigate to the MCP server directory:
+   ```bash
+   cd labs/lab02-copilot-studio/mcp-loan-calculator
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the server:
+   ```bash
+   npm start
+   ```
+4. Verify it's running — you should see:
+   ```
+   MCP Loan Calculator Server running on http://localhost:3000
+   SSE endpoint: http://localhost:3000/sse
+   ```
+5. Open a **new terminal** (keep the server running) and verify:
+   ```bash
+   curl http://localhost:3000/health
+   ```
+   You should get: `{"status":"ok","server":"loan-calculator","version":"1.0.0"}`
+
+**Expose with Dev Tunnels:**
+
+6. In the new terminal, log in to Dev Tunnels (first time only):
+   ```bash
+   devtunnel user login
+   ```
+   This opens a browser for Microsoft authentication.
+
+7. Create a tunnel to expose port 3000:
+   ```bash
+   devtunnel host -p 3000 --allow-anonymous
+   ```
+8. You'll see output like:
+   ```
+   Connect via browser: https://abc123xyz.usw2.devtunnels.ms
+   Hosting port: 3000
+   ```
+9. **Copy the tunnel URL**. Your MCP SSE endpoint is:
+   ```
+   https://abc123xyz-3000.usw2.devtunnels.ms/sse
+   ```
+
+> ⚠️ **Keep both terminals open** — the MCP server terminal and the dev tunnel terminal.
+> Closing either one will break the connection from Copilot Studio.
 
 #### 8.2 Register the MCP Server in Copilot Studio
 
 1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
 2. Click **Tools** in the top navigation bar
 3. Click **+ Add a tool**
+4. In the Add tool pane, click **New tool** → **Model Context Protocol**
 
    > 💡 **Note on MCP support:** MCP integration in Copilot Studio may be in preview.
-   > If you don't see an "MCP Server" option, check [Copilot Studio release notes](https://learn.microsoft.com/en-us/microsoft-copilot-studio/whats-new)
-   > for the latest availability. As an alternative, you can call the MCP server via
-   > a Power Automate HTTP flow (same pattern as Step 7) pointing to the MCP server's
-   > HTTP endpoint.
+   > If you don't see this option, check [Copilot Studio release notes](https://learn.microsoft.com/en-us/microsoft-copilot-studio/whats-new)
+   > for the latest availability.
 
-5. Enter the **MCP server endpoint URL** provided by your facilitator (or the URL of the
-   server you deployed in Step 8.1), e.g.:
-   `https://<your-app>.azurecontainerapps.io/sse`
-6. Copilot Studio will connect to the server and **discover tools automatically** — you should
+5. Enter the **MCP server endpoint URL**:
+   - If using Dev Tunnels: `https://abc123xyz-3000.usw2.devtunnels.ms/sse`
+     (use your actual tunnel URL from Step 8.1)
+   - If facilitator-provided: paste the URL given to you
+6. Click **Connect** (or **Next**)
+7. Copilot Studio will connect to the server and **discover tools automatically** — you should
    see `calculate_loan_payment` appear in the tool list
-7. Review the tool's **description** and **parameter schema** — these come from the MCP server's
-   tool manifest (you don't need to write them like you did for Power Automate actions)
-8. Enable the tool by toggling it **On**
-9. Click **Save**
+8. Review the tool's **description** and **parameter schema** — these come from the MCP
+   server's tool manifest (you don't need to write them like you did for Dataverse tools)
+9. Select the `calculate_loan_payment` tool to enable it
+10. Click **Add and configure** to add the tool to your agent
 
-> 💡 **Key difference from Power Automate tools:** You don't write the tool description —
-> it comes from the MCP server's tool manifest. The server declares what it can do, and
-> Copilot Studio discovers it. This is how MCP enables interoperability across platforms.
+> 💡 **Key difference from other tools:** You don't write the tool description — it comes
+> from the MCP server's tool manifest. The server declares what it can do, and Copilot
+> Studio discovers it. This is how MCP enables interoperability across platforms.
 
 #### 8.3 Test
 
@@ -893,15 +948,14 @@ build and host the loan payment calculator MCP server. Options:
 - "Calculate payments for a $300,000 mortgage at 6.5% for 30 years"
 - "If I borrow 15 thousand at 10 percent for 3 years, what's the monthly?"
 
-4. For each, verify in the conversation trace:
+3. For each, verify in the conversation trace:
    - The orchestrator **extracted** the principal, rate, and term from natural language
-   - It called the MCP `calculate_loan_payment` tool (not a Power Automate flow)
+   - It called the MCP `calculate_loan_payment` tool
    - The response includes monthly payment, total interest, and total cost
-   - If configured, the [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) card renders
 
 #### 8.4 Test the Combined Flow (Rates → Calculator)
 
-This multi-turn test shows the orchestrator chaining an HTTP tool and an MCP tool:
+This multi-turn test shows the orchestrator chaining a REST API tool and an MCP tool:
 
 | Turn | User Message | Expected Behavior |
 |---|---|---|
