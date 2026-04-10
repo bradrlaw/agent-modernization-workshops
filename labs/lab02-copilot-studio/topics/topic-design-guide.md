@@ -1,242 +1,159 @@
-# Topic Design Guide – Copilot Studio Topics
+# Topic Design Guide – Minimal Topics for Generative Orchestration
 
-This guide documents the topics to create in Copilot Studio for the Virtual Banking
-Assistant. Each topic section includes trigger phrases, the node-by-node flow design,
-and implementation notes.
+In generative orchestration mode, the LLM handles conversation routing, disambiguation,
+and multi-turn context based on your **agent instructions** and **action descriptions**.
+Topics are reduced to **guardrails** — you only need them for edge cases the orchestrator
+shouldn't handle on its own.
+
+> **Key principle:** If the LLM can handle it via instructions + actions, don't create a
+> topic for it. Every unnecessary topic adds maintenance burden and can conflict with
+> the orchestrator's decisions.
 
 ---
 
-## Topic 1: Welcome / Greeting
+## What Topics Do You Need?
 
-**Purpose:** Greet the user and present available capabilities.
+| Topic | Type | Purpose |
+|---|---|---|
+| Welcome | Optional custom | First-contact greeting to set expectations |
+| Fallback | System (built-in) | Generative answers + human escalation |
+| Escalation | System (built-in) | Hand off to a live agent |
 
-### Trigger Phrases
-- Hi
-- Hello
-- Hey
-- Good morning
-- Get started
-- Help
-- What can you do?
+That's it. **Three topics total**, and two of them are built-in.
 
-### Flow Design
+### What You Do NOT Need
 
-```
-[Trigger] → [Message: Welcome] → [Message: Capability List]
-```
+❌ "Check Balance" topic with trigger phrases
+❌ "View Transactions" topic with branching logic
+❌ "List Accounts" topic with question nodes
+❌ "Customer Profile" topic with disambiguation
+❌ Any topic that maps 1:1 to an action
 
-### Message: Welcome
+The orchestrator reads your action descriptions and decides when to invoke them.
+Manual topics for these actions would **conflict** with the orchestrator and create
+unpredictable routing behavior.
 
-> 👋 Welcome to the Virtual Banking Assistant! I can help you with the following:
+---
+
+## Topic 1: Welcome (Optional)
+
+**Purpose:** Greet the user on first contact and set expectations about capabilities.
+
+> You can also skip this topic entirely and let the orchestrator generate a greeting
+> from the agent instructions. Test both approaches and see which feels better.
+
+### Configuration
+
+1. Go to **Topics** → **+ Add a topic** → **From blank**
+2. Name: `Welcome`
+3. Trigger: Set as the **Greeting** system topic override, or use the
+   `Conversation Start` trigger
+4. Add a single **Message** node:
+
+### Message Content
+
+> 👋 Welcome to the Virtual Banking Assistant! I can help you with:
 >
-> • **Check account balance** — View current and available balances
-> • **Recent transactions** — See your latest account activity
-> • **List accounts** — View all your accounts at a glance
-> • **Profile information** — Review your contact details on file
+> • Check account balances
+> • View recent transactions
+> • List all your accounts
+> • Look up your profile information
 >
-> What would you like to do?
+> Just ask me anything to get started!
 
 ### Implementation Notes
-- Set this as a high-priority topic so it triggers on generic greetings
-- Consider adding a quick-reply / suggested actions for the four capabilities
+- Keep this short — the LLM takes over from here
+- Do **not** add suggested actions or quick replies that funnel users into specific paths;
+  let them ask naturally
+- Do **not** add follow-up question nodes; the orchestrator handles the next turn
 
 ---
 
-## Topic 2: Check Account Balance
+## Topic 2: Fallback (System)
 
-**Purpose:** Look up and display the current balance for a selected account.
+**Purpose:** Handle requests that don't match any action and can't be answered from
+knowledge sources.
 
-### Trigger Phrases
-- What's my balance?
-- Check my balance
-- Account balance
-- How much money do I have?
-- What's in my checking account?
-- Show my savings balance
-- Balance on account ending in {last4}
+### Configuration
 
-### Flow Design
+1. Go to **Topics** → **System** → **Fallback**
+2. Ensure **generative answers** is the first fallback behavior:
+   - The orchestrator will attempt to answer from knowledge sources
+   - If knowledge sources can't answer, it falls through to the escalation message
 
-```
-[Trigger]
-    → [Action: List Accounts]  (get accounts for customer)
-    → [Condition: Single account?]
-        → YES: Skip selection
-        → NO:  [Question: Which account?]  (show as choices)
-    → [Action: Get Balance]  (retrieve balance for selected account)
-    → [Message: Balance Card]  (adaptive card)
-    → [Question: Anything else?]
-        → YES: [Redirect: Welcome]
-        → NO:  [Message: Goodbye]
-```
+### Escalation Message
 
-### Question: Which Account?
+If generative answers also can't help:
 
-> Which account would you like to check?
-
-Display as choice options:
-- Primary Checking ••••4521
-- Emergency Fund ••••7834
-- 12-Month CD ••••2190
-
-### Message: Balance Card
-
-Use the adaptive card template: [`adaptive-cards/account-balance-card.json`](../adaptive-cards/account-balance-card.json)
+> I wasn't able to find an answer to that question. Would you like me to connect you
+> with a human agent, or can I help you with something else?
 
 ### Implementation Notes
-- The "List Accounts" action returns all accounts for the authenticated customer
-- If the user mentions a specific account type or last 4 digits in the trigger, try to
-  auto-select the account (use entity extraction or slot-filling)
-- Format currency values with 2 decimal places and comma separators
+- The fallback topic fires **only** when the orchestrator determines none of the
+  registered actions are relevant AND knowledge sources don't have an answer
+- Monitor fallback triggers in analytics — they reveal gaps in your action descriptions
+  or knowledge sources
+- If a specific request type consistently falls through, consider:
+  1. First: Improve action descriptions or agent instructions
+  2. Second: Add knowledge source content
+  3. Last resort: Create a targeted topic (rare)
 
 ---
 
-## Topic 3: Recent Transactions
+## Topic 3: Escalation (System)
 
-**Purpose:** Display recent transaction history for a selected account.
+**Purpose:** Transfer the conversation to a human agent.
 
-### Trigger Phrases
-- Show my recent transactions
-- Transaction history
-- What were my last purchases?
-- Recent activity
-- Any deposits recently?
-- Show transactions for checking
-- What did I spend this week?
+### Configuration
 
-### Flow Design
+1. Go to **Topics** → **System** → **Escalation**
+2. If live agent handoff is configured (Omnichannel, Dynamics 365, etc.), wire it here
+3. If not configured, display a message:
 
-```
-[Trigger]
-    → [Action: List Accounts]
-    → [Question: Which account?]  (choice selection)
-    → [Question: How many transactions?]  (default: 5)
-    → [Action: Get Transactions]  (retrieve recent transactions)
-    → [Message: Transaction Card]  (adaptive card with list)
-    → [Question: Anything else?]
-        → YES: [Redirect: Welcome]
-        → NO:  [Message: Goodbye]
-```
-
-### Question: How Many Transactions?
-
-> How many recent transactions would you like to see?
-
-Options:
-- Last 5 (default)
-- Last 10
-- Last 30
-
-### Message: Transaction Card
-
-Use the adaptive card template: [`adaptive-cards/transaction-list-card.json`](../adaptive-cards/transaction-list-card.json)
-
-### Implementation Notes
-- Default to the 5 most recent transactions if the user doesn't specify
-- Calculate and display summary totals (deposits, withdrawals, net change)
-- Color-code amounts: green for credits, red for debits
+> I'm connecting you with a support representative. You can also reach us at
+> 1-800-555-0199 or visit any branch. Thank you for your patience.
 
 ---
 
-## Topic 4: List All Accounts
+## How the Orchestrator Replaces Topics
 
-**Purpose:** Display all accounts and balances for the customer.
+Here's how the LLM handles scenarios that would traditionally require dedicated topics:
 
-### Trigger Phrases
-- Show my accounts
-- List all accounts
-- What accounts do I have?
-- Account overview
-- All my accounts
+### User asks about balance
+| What happens | Details |
+|---|---|
+| **Classic approach** | "Check Balance" topic triggers → question node asks which account → action node calls Get Balance |
+| **Generative approach** | LLM reads action descriptions → calls **List Accounts** to see what the customer has → asks "Which account?" naturally → calls **Get Account Balance** → formats response |
 
-### Flow Design
+### User asks a follow-up
+| What happens | Details |
+|---|---|
+| **Classic approach** | Context is lost between topics; user has to start over or topic must explicitly pass state |
+| **Generative approach** | LLM maintains conversation context → "What about transactions for that account?" just works |
 
-```
-[Trigger]
-    → [Action: List Accounts]  (get all accounts with balances)
-    → [Message: Account List Card]  (adaptive card)
-    → [Question: Want to see details for a specific account?]
-        → YES: [Redirect: Check Account Balance]
-        → NO:  [Question: Anything else?]
-```
+### User asks something ambiguous
+| What happens | Details |
+|---|---|
+| **Classic approach** | Falls through to fallback because no trigger phrase matches |
+| **Generative approach** | LLM interprets "How much do I have?" as a balance request and calls the right action |
 
-### Message: Account List Card
-
-Use the adaptive card template: [`adaptive-cards/account-list-card.json`](../adaptive-cards/account-list-card.json)
-
-### Implementation Notes
-- Calculate and display total balance across all accounts
-- Include account status (Active, Inactive, etc.)
-- Card includes action buttons to drill into balance or transactions
+### User asks about something outside capabilities
+| What happens | Details |
+|---|---|
+| **Classic approach** | Needs explicit "out of scope" topics with trigger phrases |
+| **Generative approach** | Agent instructions say "you cannot transfer funds" → LLM politely declines and offers alternatives |
 
 ---
 
-## Topic 5: Customer Profile
+## When to Add a Custom Topic (Rare)
 
-**Purpose:** Display the customer's profile information on file.
+You should only add a custom topic if:
 
-### Trigger Phrases
-- Show my profile
-- What's my address?
-- What email do you have for me?
-- My contact information
-- Account holder information
-- What phone number is on file?
+1. **Strict compliance requirement** — A specific request must always produce the exact
+   same response, word for word, with no LLM variation
+2. **The orchestrator consistently misroutes** — After tuning instructions and descriptions,
+   a specific scenario still doesn't work (this is rare)
+3. **Complex UI interaction** — You need a specific adaptive card flow that the orchestrator
+   can't produce from action outputs alone
 
-### Flow Design
-
-```
-[Trigger]
-    → [Action: Get Customer Profile]
-    → [Message: Profile Card]  (adaptive card)
-    → [Message: Update Notice]
-    → [Question: Anything else?]
-        → YES: [Redirect: Welcome]
-        → NO:  [Message: Goodbye]
-```
-
-### Message: Profile Card
-
-Use the adaptive card template: [`adaptive-cards/customer-profile-card.json`](../adaptive-cards/customer-profile-card.json)
-
-### Message: Update Notice
-
-> ℹ️ To update your profile information, please visit a branch or call our support line
-> at 1-800-555-0199.
-
-### Implementation Notes
-- Profile is read-only — the agent should not offer to update profile information
-- If the user asks to change their address/phone/email, explain they need to visit a
-  branch or call support
-- Be security-conscious: confirm the profile belongs to the authenticated user
-
----
-
-## Topic 6: Fallback / Escalation
-
-**Purpose:** Handle unrecognized requests gracefully.
-
-### Trigger
-This is the system fallback topic — it fires when no other topic matches.
-
-### Flow Design
-
-```
-[Fallback Trigger]
-    → [Condition: Can generative answers handle it?]
-        → YES: [Generative Answer]  (grounded in knowledge sources)
-        → NO:  [Message: Escalation offer]
-    → [Question: Would you like to try something else?]
-        → YES: [Redirect: Welcome]
-        → NO:  [Message: Goodbye]
-```
-
-### Message: Escalation Offer
-
-> I'm not sure I can help with that. Would you like me to connect you with a
-> human agent?
-
-### Implementation Notes
-- Enable **generative answers** as the first fallback (uses knowledge sources)
-- If generative answers also can't help, offer human escalation
-- Log unrecognized intents for future topic development
+Even in these cases, try to solve it with better instructions or action descriptions first.

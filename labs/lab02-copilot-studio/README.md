@@ -4,9 +4,13 @@
 
 Build a **Virtual Banking Assistant** using Microsoft Copilot Studio — a low-code agent
 that helps customers check account balances, review recent transactions, list accounts,
-and look up profile information. This lab introduces the full Copilot Studio development
-lifecycle: agent creation, knowledge grounding, topic design, Power Automate actions,
-adaptive card responses, and publishing to Teams.
+and look up profile information.
+
+This lab uses Copilot Studio's **generative orchestration** model: instead of manually
+wiring topic flows and trigger phrases, you define **agent instructions** and register
+**actions with rich descriptions**. The LLM orchestrator decides which action to call,
+what clarifying questions to ask, and how to present the results — all based on the
+conversation context.
 
 > 📖 **Scenario details:** See [`scenario.md`](scenario.md) for the complete use case
 > definition, data model, conversation flows, and success criteria.
@@ -17,13 +21,25 @@ adaptive card responses, and publishing to Teams.
 
 By the end of this lab you will be able to:
 
-- Create and configure a Copilot Studio agent with a custom persona
-- Add knowledge sources for generative grounding (FAQ, documents)
-- Design and build multiple topics with trigger phrases and branching logic
-- Create Power Automate cloud flows that serve as backend actions
-- Import and query mock data in Dataverse tables
-- Use adaptive cards to display structured financial data
+- Create a Copilot Studio agent driven by **generative orchestration**
+- Write effective **agent instructions** that shape behavior without rigid flows
+- Register **plugin actions** with descriptions the LLM uses for routing
+- Add **knowledge sources** for generative grounding (FAQ, documents)
+- Import mock data into Dataverse tables
+- Use **adaptive cards** to display structured financial data
 - Publish and test the agent in Microsoft Teams
+
+### Classic vs Generative Orchestration
+
+This lab deliberately uses the **generative (LLM-first)** approach:
+
+| Classic NLP Approach | Generative Orchestration (This Lab) |
+|---|---|
+| Explicit trigger phrases per topic | Agent instructions + action descriptions drive routing |
+| Manual question nodes for disambiguation | LLM asks clarifying questions naturally |
+| Hardcoded branching / waterfall flows | Orchestrator decides next steps from context |
+| Topics define rigid conversation paths | Topics used only as guardrails (welcome, fallback) |
+| Developer anticipates every user path | LLM handles the long tail of user expressions |
 
 ---
 
@@ -48,13 +64,13 @@ By the end of this lab you will be able to:
 ```
 lab02-copilot-studio/
 ├── README.md                  # This file — full walkthrough
-├── scenario.md                # Use case definition, personas, conversation flows
+├── scenario.md                # Use case definition, personas, data model
 ├── sample-data/
 │   ├── customers.json         # 3 demo customer profiles
 │   ├── accounts.json          # 7 accounts across customers
 │   └── transactions.json      # 20 sample transactions
 ├── topics/
-│   └── topic-design-guide.md  # Detailed topic flows and trigger phrases
+│   └── topic-design-guide.md  # Minimal topic setup (welcome + fallback only)
 ├── flows/
 │   └── flow-design-guide.md   # Power Automate flow designs and Dataverse setup
 └── adaptive-cards/
@@ -119,33 +135,71 @@ Verify your data:
 |---|---|
 | **Name** | Virtual Banking Assistant |
 | **Description** | A self-service agent that helps customers check balances, review transactions, list accounts, and view profile information. |
-| **Instructions** | See below |
 
-**Agent Instructions** (paste into the instructions field):
+#### 2.3 Write Agent Instructions
 
-> You are a Virtual Banking Assistant for a retail financial institution. You help
-> authenticated customers check account balances, review recent transactions, list
-> their accounts, and look up their profile information.
->
-> Guidelines:
-> - Always be professional, accurate, and security-conscious
-> - Never share information about other customers
-> - Format currency values with 2 decimal places
-> - When displaying account data, always use the provided adaptive cards
-> - If you cannot fulfill a request, offer to connect the customer with a human agent
-> - Do not offer to modify profile information — direct users to a branch or support line
+The instructions are the **most important part** of a generative agent. They replace
+the rigid topic/trigger architecture with natural language guidance that tells the LLM
+how to behave, what it can and cannot do, and how to format responses.
 
-#### 2.3 Configure Agent Settings
+Paste the following into the **Instructions** field:
+
+```
+You are a Virtual Banking Assistant for a retail financial institution.
+
+## Your capabilities
+You help authenticated customers with these self-service actions:
+- Check the current and available balance of any of their accounts
+- View recent transaction history for a specific account
+- List all accounts they hold with their balances
+- Look up their profile information (name, address, phone, email)
+
+## How to handle requests
+- When a customer asks about an account, first retrieve their account list using
+  the List Accounts action to see what accounts they have.
+- If they have multiple accounts and haven't specified which one, ask them to
+  choose. Present the options clearly (nickname and last 4 digits).
+- When showing balances, always include both current and available balance.
+- When showing transactions, default to the 5 most recent unless the customer
+  asks for more. Always include the summary totals.
+- When showing profile information, remind the customer that updates must be
+  done at a branch or by calling 1-800-555-0199.
+
+## Formatting
+- Always use the provided adaptive card templates to display account data,
+  transactions, and profile information. Do not render financial data as
+  plain text.
+- Format all currency values with 2 decimal places.
+
+## Security and boundaries
+- Never reveal information about other customers.
+- You cannot modify account data, transfer funds, or change profile information.
+  If asked, explain what you can do and offer to connect them with a human agent.
+- Do not speculate about account activity or provide financial advice.
+
+## Tone
+Be professional, concise, and helpful. Acknowledge the customer's request
+before taking action.
+```
+
+> 💡 **Why this matters:** In generative orchestration, the instructions are your primary
+> control mechanism. The LLM reads them on every turn to decide how to respond, which
+> actions to call, and what follow-up questions to ask. Well-written instructions eliminate
+> the need for most manual topic flows.
+
+#### 2.4 Configure Generative AI Settings
 
 1. Go to **Settings** → **Generative AI**
-2. Set the moderation level to **Medium** (appropriate for financial data)
-3. Enable **Generative answers** as a fallback for unrecognized intents
+2. Set orchestration to **Generative** (not Classic)
+3. Set the content moderation level to **Medium**
+4. Enable **Generative answers** for knowledge-grounded fallback
 
 ---
 
 ### Step 3: Add Knowledge Sources
 
-Knowledge sources enable generative answers for questions not covered by specific topics.
+Knowledge sources let the agent answer general questions (like branch hours or policies)
+that don't require calling an action.
 
 #### 3.1 Create a Knowledge FAQ Document
 
@@ -180,24 +234,24 @@ Open the **Test** panel and try questions from the FAQ:
 - "How do I report a stolen card?"
 - "What's the ATM limit?"
 
-✅ The agent should answer accurately using the knowledge source.
+✅ The agent should answer accurately, citing the knowledge source.
 
 ---
 
 ### Step 4: Build Power Automate Flows (Backend Actions)
 
-The agent needs backend actions to retrieve data from Dataverse. You'll create four
-Power Automate cloud flows.
+The agent needs actions to retrieve data from Dataverse. You'll create four
+Power Automate cloud flows. The LLM will decide **when** to call each one based on
+the action's name and description — no trigger phrases needed.
 
 > 📖 Full flow designs with schemas: [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
 
 #### 4.1 Flow: List Accounts
 
 1. Open [Power Automate](https://make.powerautomate.com) → **Cloud flows** → **New** → **Instant cloud flow**
-2. Choose the trigger: **Run a flow from Copilot** (or "When an action is performed")
+2. Choose the trigger: **Run a flow from Copilot**
 3. Add an input parameter: `CustomerId` (Text)
-4. Add action: **List rows** (Dataverse)
-   - Table: Banking Accounts
+4. Add action: **List rows** (Dataverse: Banking Accounts)
    - Filter rows: `_customerid_value eq '{CustomerId}'`
 5. Add action: **Select** — map to clean output schema
 6. Add action: **Respond to Copilot** — return the account list
@@ -217,7 +271,7 @@ Power Automate cloud flows.
    - Filter: `_accountid_value eq '{AccountId}'`
    - Order by: `date desc`
    - Top count: `{Count}`
-4. Action: **Select** — map to clean output schema
+4. Action: **Select** — map to clean output
 5. Action: **Compose** — calculate summary (total credits, debits, net change)
 6. Action: **Respond to Copilot** — return transactions + summary
 
@@ -237,121 +291,147 @@ Before connecting to Copilot Studio, test each flow independently:
 
 ---
 
-### Step 5: Register Flows as Agent Actions
+### Step 5: Register Actions (LLM-Routed)
 
-Connect each Power Automate flow to your Copilot Studio agent:
+This is where the generative orchestration model differs most from classic Copilot Studio.
+Instead of wiring actions into topic nodes, you register them as **plugin actions** with
+**descriptions the LLM reads** to decide when to invoke them.
+
+#### 5.1 Add Each Flow as an Action
 
 1. In Copilot Studio, go to **Actions** → **+ Add an action**
 2. Select **Power Automate flow**
-3. Choose the flow from the list
-4. Map the input/output parameters
-5. Set a clear **name** and **description** — the orchestrator uses the description
-   to decide when to invoke the action:
+3. Choose the flow
+4. Map input/output parameters
+
+#### 5.2 Write Action Descriptions (Critical)
+
+The **description** is how the orchestrator knows when to call each action. Write them
+as if you're explaining to a colleague when this action should be used:
 
 | Action Name | Description |
 |---|---|
-| **List Accounts** | Retrieves all bank accounts and balances for the authenticated customer |
-| **Get Account Balance** | Gets the detailed balance for a specific bank account by account ID |
-| **Get Recent Transactions** | Returns recent transaction history for a specific account with summary totals |
-| **Get Customer Profile** | Retrieves the customer's personal information including name, address, and contact details |
+| **List Accounts** | Use this action to retrieve all bank accounts belonging to the authenticated customer. Returns account IDs, types (Checking, Savings, Certificate), nicknames, last 4 digits, current balances, available balances, and status. Call this first when the customer asks about any account — you need the account list to know what accounts they have. |
+| **Get Account Balance** | Use this action to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
+| **Get Recent Transactions** | Use this action to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
+| **Get Customer Profile** | Use this action to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
 
-> 💡 **Tip:** The description field is critical. Copilot Studio's orchestrator uses it
-> to route user requests to the correct action. Be specific and include key terms.
+> 💡 **Why descriptions matter so much:** In generative orchestration, the LLM reads every
+> action description on each turn to decide which action (if any) to call. Vague descriptions
+> like "Gets account data" lead to routing errors. Specific descriptions that explain
+> **when** to use the action and **what it returns** give the LLM the context to make
+> good decisions.
+
+#### 5.3 Configure Adaptive Card Responses
+
+For each action, configure the output to use the corresponding adaptive card template:
+
+| Action | Adaptive Card |
+|---|---|
+| List Accounts | [`account-list-card.json`](adaptive-cards/account-list-card.json) |
+| Get Account Balance | [`account-balance-card.json`](adaptive-cards/account-balance-card.json) |
+| Get Recent Transactions | [`transaction-list-card.json`](adaptive-cards/transaction-list-card.json) |
+| Get Customer Profile | [`customer-profile-card.json`](adaptive-cards/customer-profile-card.json) |
 
 ---
 
-### Step 6: Create Topics
+### Step 6: Configure Minimal Topics (Guardrails Only)
 
-Build the conversation topics that tie trigger phrases to actions and adaptive card
-responses.
+With generative orchestration, you need very few topics. The LLM handles the
+conversation flow. Topics serve only as **guardrails** for specific edge cases.
 
-> 📖 Full topic designs with trigger phrases and flow diagrams:
-> [`topics/topic-design-guide.md`](topics/topic-design-guide.md)
+> 📖 See [`topics/topic-design-guide.md`](topics/topic-design-guide.md) for details.
 
-#### 6.1 Topic: Welcome / Greeting
+#### 6.1 System Topics (Review Defaults)
 
-1. Go to **Topics** → **+ Add a topic** → **From blank**
-2. Name: `Welcome`
-3. Add trigger phrases: "Hi", "Hello", "Get started", "Help", "What can you do?"
-4. Add a **Message** node with the welcome text:
+Review the built-in system topics and ensure they're configured:
 
-   > 👋 Welcome to the Virtual Banking Assistant! I can help you with:
-   > • **Check account balance** — View current and available balances
-   > • **Recent transactions** — See your latest account activity
-   > • **List accounts** — View all your accounts at a glance
-   > • **Profile information** — Review your contact details on file
-   >
-   > What would you like to do?
+| System Topic | Configuration |
+|---|---|
+| **Greeting** | Let the generative orchestrator handle it using your agent instructions. Alternatively, add a simple welcome message (see topic guide). |
+| **Fallback** | Generative answers enabled as first response. If knowledge sources can't answer, offer human escalation. |
+| **Escalation** | "Let me connect you with a human agent." + handoff if configured. |
 
-#### 6.2 Topic: Check Account Balance
+#### 6.2 Optional: Welcome Topic
 
-1. Create topic with trigger phrases: "balance", "how much money", "check my balance"
-2. Add a **Plugin action** node → call **List Accounts** (to get the customer's accounts)
-3. Add a **Question** node → "Which account?" with dynamic choices from the account list
-4. Add a **Plugin action** node → call **Get Account Balance** with the selected account ID
-5. Add a **Message** node → send the adaptive card from
-   [`adaptive-cards/account-balance-card.json`](adaptive-cards/account-balance-card.json)
-6. Add a **Question** node → "Is there anything else I can help with?"
-7. Branch: Yes → redirect to Welcome; No → end conversation
+You may optionally create a single Welcome topic that displays a brief greeting when
+the user first connects. This is useful for setting expectations:
 
-#### 6.3 Topic: Recent Transactions
+> 👋 Welcome to the Virtual Banking Assistant! I can help you check balances, view
+> transactions, list your accounts, or look up your profile. Just ask!
 
-1. Create topic with trigger phrases: "transactions", "recent activity", "purchases"
-2. Call **List Accounts** → ask which account → ask how many transactions (5/10/30)
-3. Call **Get Recent Transactions** with the account ID and count
-4. Display the adaptive card from
-   [`adaptive-cards/transaction-list-card.json`](adaptive-cards/transaction-list-card.json)
-5. Ask "Anything else?" → branch
+This is the **only custom topic** you should need. Everything else is handled by
+the orchestrator + actions.
 
-#### 6.4 Topic: List All Accounts
+#### 6.3 What You Should NOT Create
 
-1. Create topic with trigger phrases: "my accounts", "list accounts", "account overview"
-2. Call **List Accounts**
-3. Display the adaptive card from
-   [`adaptive-cards/account-list-card.json`](adaptive-cards/account-list-card.json)
-4. Ask "Want to see details for a specific account?" → redirect to balance or transactions
+In generative orchestration mode, **do not** create:
+- ❌ Individual topics for "Check Balance", "View Transactions", etc.
+- ❌ Trigger phrases per capability
+- ❌ Question nodes with hardcoded disambiguation choices
+- ❌ Manual branching / condition nodes for routing
 
-#### 6.5 Topic: Customer Profile
-
-1. Create topic with trigger phrases: "my profile", "my address", "contact information"
-2. Call **Get Customer Profile**
-3. Display the adaptive card from
-   [`adaptive-cards/customer-profile-card.json`](adaptive-cards/customer-profile-card.json)
-4. Add note: "To update profile information, visit a branch or call 1-800-555-0199"
-
-#### 6.6 Configure Fallback Behavior
-
-1. Go to **Topics** → **System** → **Fallback**
-2. Ensure generative answers is the first response (uses your knowledge sources)
-3. If generative answers can't help, display: "I'm not sure I can help with that.
-   Would you like me to connect you with a human agent?"
+The LLM handles all of this based on your instructions and action descriptions.
 
 ---
 
 ### Step 7: Test the Agent
 
-#### 7.1 Test in Copilot Studio
+This is where you'll see the power of generative orchestration — the agent handles
+natural variations, multi-turn conversations, and edge cases without explicit topic flows.
 
-Use the built-in **Test** panel to verify each conversation flow:
+#### 7.1 Basic Capability Tests
 
-| Test Scenario | Expected Result |
+| User Message | Expected Behavior |
 |---|---|
-| "Hi" | Welcome message with capability list |
-| "What's my checking balance?" | Prompts for account selection → shows balance card |
-| "Show my recent transactions" | Account selection → count selection → transaction card |
-| "List all my accounts" | Account list card with totals |
-| "What's my address?" | Profile card with contact information |
-| "What are your branch hours?" | Generative answer from knowledge source |
-| "I want to buy a car" | Fallback → generative answer or escalation offer |
+| "Hi" | Greets the user, explains capabilities |
+| "What's my checking balance?" | Calls List Accounts → identifies checking → calls Get Balance → shows card |
+| "Show me my recent transactions" | Calls List Accounts → asks which account → calls Get Transactions → shows card |
+| "What accounts do I have?" | Calls List Accounts → shows account list card |
+| "What's my address?" | Calls Get Customer Profile → shows profile card |
 
-#### 7.2 Test Edge Cases
+#### 7.2 Multi-Turn Conversation Tests
 
-| Test | Expected Behavior |
+These test the LLM's ability to maintain context across turns:
+
+| Turn | User Message | Expected Behavior |
+|---|---|---|
+| 1 | "Show my accounts" | Lists all accounts |
+| 2 | "What's the balance on the savings one?" | Knows which savings account from context → shows balance |
+| 3 | "And the transactions?" | Knows to show transactions for the same savings account |
+| 4 | "What about my checking?" | Switches context to checking → asks "balance or transactions?" |
+
+#### 7.3 Natural Language Variation Tests
+
+The LLM should handle these **without** explicit trigger phrases:
+
+| User Message | Should Still Work |
 |---|---|
-| Ask about another customer's account | Agent should refuse / only show authenticated user's data |
-| Request to change address | Agent explains it's read-only and directs to branch/phone |
-| Empty or gibberish input | Graceful fallback |
-| Ask for 100 transactions | Handles gracefully (cap or return all available) |
+| "How much money do I have?" | Routes to List Accounts or Get Balance |
+| "Did I get paid this week?" | Routes to Get Transactions, understands "paid" = credit |
+| "Where do you think I live?" | Routes to Get Customer Profile, shows address |
+| "Show me everything" | Lists accounts, or asks what specifically they'd like |
+| "What did I spend at restaurants?" | Routes to transactions, filters may not apply but shows recent |
+
+#### 7.4 Guardrail / Boundary Tests
+
+| User Message | Expected Behavior |
+|---|---|
+| "Transfer $500 to savings" | Politely declines — explains it can only view, not modify |
+| "Show me John's account" | Refuses — only shows authenticated user's data |
+| "Change my email address" | Explains profile is read-only, directs to branch or 1-800-555-0199 |
+| "Should I invest in crypto?" | Declines — no financial advice per instructions |
+| "What are your branch hours?" | Answers from knowledge source (generative answers) |
+
+#### 7.5 Troubleshoot Routing Issues
+
+If the LLM calls the wrong action or doesn't call any:
+
+1. **Check action descriptions** — Are they specific enough? Do they explain when to use the action?
+2. **Check agent instructions** — Do they cover the scenario the user is asking about?
+3. **Check orchestration mode** — Ensure it's set to **Generative**, not Classic
+4. **Review the conversation trace** — In the test panel, expand the trace to see which
+   action the orchestrator considered and why
 
 ---
 
@@ -394,13 +474,14 @@ Use the built-in **Test** panel to verify each conversation flow:
 ## Deliverables
 
 - [ ] Dataverse tables created and populated with mock data (3 customers, 7 accounts, 20 transactions)
-- [ ] Working Copilot Studio agent with custom instructions and persona
+- [ ] Working Copilot Studio agent with generative orchestration enabled
+- [ ] Agent instructions written and tested
 - [ ] Knowledge source added with generative answers working
 - [ ] 4 Power Automate flows created and tested (List Accounts, Get Balance, Get Transactions, Get Profile)
-- [ ] Flows registered as Copilot Studio actions
-- [ ] 5 topics built (Welcome, Balance, Transactions, Account List, Profile)
+- [ ] Flows registered as plugin actions with LLM-optimized descriptions
 - [ ] Adaptive cards displaying financial data correctly
-- [ ] Fallback/escalation behavior configured
+- [ ] Multi-turn conversation working (context maintained across turns)
+- [ ] Guardrails tested (refuses modifications, no cross-customer data, no financial advice)
 - [ ] Agent published and tested in Microsoft Teams
 - [ ] Solution exported (`.zip`)
 
@@ -410,12 +491,14 @@ Use the built-in **Test** panel to verify each conversation flow:
 
 | Issue | Solution |
 |---|---|
-| Power Automate flow not appearing in Copilot Studio | Ensure the flow uses the "Run a flow from Copilot" trigger and is in the same environment |
+| LLM calls the wrong action | Improve action descriptions — be more specific about when to use each one |
+| LLM doesn't call any action | Check that orchestration is set to Generative mode; verify actions are published |
+| Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
+| Power Automate flow not appearing | Ensure the flow uses the "Run a flow from Copilot" trigger and is in the same environment |
 | Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
-| Adaptive card not rendering | Validate JSON at [adaptivecards.io/designer](https://adaptivecards.io/designer/); check Teams version compatibility |
-| Agent doesn't route to the correct topic | Review trigger phrases for overlap; check action descriptions are specific |
-| Generative answers returning irrelevant content | Review knowledge source content; adjust moderation level in settings |
-| "Access denied" on Dataverse | Verify maker role and table-level security roles are assigned |
+| Adaptive card not rendering | Validate JSON at [adaptivecards.io/designer](https://adaptivecards.io/designer/) |
+| Agent provides financial advice | Strengthen the security/boundaries section of your instructions |
+| Multi-turn context is lost | This can happen with very long conversations; test with shorter flows |
 
 ---
 
@@ -423,12 +506,28 @@ Use the built-in **Test** panel to verify each conversation flow:
 
 | Concept | What You Learned |
 |---|---|
-| **Declarative agents** | Configure behavior through instructions, not code |
+| **Generative orchestration** | The LLM decides which action to call based on instructions and descriptions |
+| **Agent instructions** | Natural language guidance that replaces rigid topic flows |
+| **Action descriptions** | Tell the LLM *when* to use an action and *what* it returns |
 | **Knowledge grounding** | Generative answers sourced from uploaded documents |
-| **Topics** | Structured conversation flows with triggers and branching |
-| **Plugin actions** | Power Automate flows exposed as agent capabilities |
+| **Minimal topics** | Only welcome + fallback needed; the orchestrator handles the rest |
 | **Adaptive cards** | Rich, structured UI for displaying data in chat |
-| **Managed orchestration** | Copilot Studio routes user intent to the right topic/action |
+
+### Why This Approach Matters
+
+In classic Copilot Studio, you had to anticipate every way a user might phrase a request
+and build explicit topic flows for each path. This is fragile — users inevitably say things
+you didn't anticipate, and maintaining dozens of topics becomes a burden.
+
+With generative orchestration:
+- **Instructions** define the agent's identity, capabilities, and boundaries
+- **Action descriptions** tell the LLM what tools are available
+- The **LLM handles routing**, disambiguation, multi-turn context, and natural language variation
+- You write **fewer topics**, maintain **less configuration**, and get **better coverage**
+
+This is the direction Microsoft is investing in. Classic topics still have their place
+(strict compliance flows, exact-match routing), but for most conversational scenarios,
+generative orchestration is the recommended approach.
 
 ---
 
