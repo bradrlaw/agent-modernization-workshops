@@ -1,0 +1,86 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "💰 Loan Payment Estimate",
+          "weight": "Bolder",
+          "size": "Medium"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Loan Amount",
+              "value": "$${principal}"
+            },
+            {
+              "title": "Interest Rate",
+              "value": "${annualRate}% APR"
+            },
+            {
+              "title": "Loan Term",
+              "value": "${termMonths} months"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "style": "accent",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Monthly Payment",
+          "size": "Small",
+          "isSubtle": true
+        },
+        {
+          "type": "TextBlock",
+          "text": "$${monthlyPayment}",
+          "weight": "Bolder",
+          "size": "ExtraLarge",
+          "color": "Good",
+          "spacing": "None"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Total Interest",
+              "value": "$${totalInterest}"
+            },
+            {
+              "title": "Total Cost",
+              "value": "$${totalCost}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "⚠️ This is an estimate for illustrative purposes only. Actual payments may vary based on creditworthiness and other factors.",
+      "wrap": true,
+      "size": "Small",
+      "isSubtle": true
+    }
+  ]
+}

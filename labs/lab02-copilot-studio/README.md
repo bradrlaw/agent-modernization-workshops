@@ -4,13 +4,19 @@
 
 Build a **Virtual Banking Assistant** using Microsoft Copilot Studio — a low-code agent
 that helps customers check account balances, review recent transactions, list accounts,
-and look up profile information.
+look up profile information, query live loan rates from an external API, and calculate
+loan payments via an MCP tool.
 
 This lab uses Copilot Studio's **generative orchestration** model: instead of manually
 wiring topic flows and trigger phrases, you define **agent instructions** and register
 **actions with rich descriptions**. The LLM orchestrator decides which action to call,
 what clarifying questions to ask, and how to present the results — all based on the
 conversation context.
+
+The lab demonstrates three action patterns:
+1. **Power Automate + Dataverse** — Standard data queries (accounts, transactions, profile)
+2. **Power Automate + HTTP connector** — Calling an external REST API (loan rates via APIM)
+3. **MCP tool** — Connecting to a Model Context Protocol server (loan payment calculator)
 
 > 📖 **Scenario details:** See [`scenario.md`](scenario.md) for the complete use case
 > definition, data model, conversation flows, and success criteria.
@@ -24,6 +30,8 @@ By the end of this lab you will be able to:
 - Create a Copilot Studio agent driven by **generative orchestration**
 - Write effective **agent instructions** that shape behavior without rigid flows
 - Register **plugin actions** with descriptions the LLM uses for routing
+- Call an **external REST API** via Power Automate's HTTP connector (APIM mock backend)
+- Connect a **Model Context Protocol (MCP)** tool server to Copilot Studio
 - Add **knowledge sources** for generative grounding (FAQ, documents)
 - Import mock data into Dataverse tables
 - Use **adaptive cards** to display structured financial data
@@ -72,12 +80,16 @@ lab02-copilot-studio/
 ├── topics/
 │   └── topic-design-guide.md  # Minimal topic setup (welcome + fallback only)
 ├── flows/
-│   └── flow-design-guide.md   # Power Automate flow designs and Dataverse setup
+│   ├── flow-design-guide.md   # Power Automate flow designs and Dataverse setup
+│   ├── apim-mock-setup.md     # Azure APIM mock backend for loan rates API
+│   └── mcp-server-setup.md    # MCP loan payment calculator server
 └── adaptive-cards/
     ├── account-balance-card.json    # Balance display card
     ├── transaction-list-card.json   # Transaction history card
     ├── account-list-card.json       # All accounts summary card
-    └── customer-profile-card.json   # Profile information card
+    ├── customer-profile-card.json   # Profile information card
+    ├── loan-rates-card.json         # Loan rates display card
+    └── loan-calculator-card.json    # Loan payment estimate card
 ```
 
 ---
@@ -153,6 +165,8 @@ You help authenticated customers with these self-service actions:
 - View recent transaction history for a specific account
 - List all accounts they hold with their balances
 - Look up their profile information (name, address, phone, email)
+- Look up current loan interest rates by product type
+- Calculate estimated monthly loan payments given a principal, rate, and term
 
 ## How to handle requests
 - When a customer asks about an account, first retrieve their account list using
@@ -164,11 +178,16 @@ You help authenticated customers with these self-service actions:
   asks for more. Always include the summary totals.
 - When showing profile information, remind the customer that updates must be
   done at a branch or by calling 1-800-555-0199.
+- When a customer asks about loan rates, retrieve the current rates and present
+  them clearly. If they ask about a specific product, highlight that rate.
+- When a customer wants to calculate loan payments, collect the loan amount,
+  interest rate, and term. If they've already looked up rates, offer to use
+  one of those rates. Calculate the payment and show the breakdown.
 
 ## Formatting
 - Always use the provided adaptive card templates to display account data,
-  transactions, and profile information. Do not render financial data as
-  plain text.
+  transactions, profile information, loan rates, and payment calculations.
+  Do not render financial data as plain text.
 - Format all currency values with 2 decimal places.
 
 ## Security and boundaries
@@ -176,6 +195,7 @@ You help authenticated customers with these self-service actions:
 - You cannot modify account data, transfer funds, or change profile information.
   If asked, explain what you can do and offer to connect them with a human agent.
 - Do not speculate about account activity or provide financial advice.
+- Loan calculations are estimates only — always include the disclaimer.
 
 ## Tone
 Be professional, concise, and helpful. Acknowledge the customer's request
@@ -315,6 +335,7 @@ as if you're explaining to a colleague when this action should be used:
 | **Get Account Balance** | Use this action to get detailed balance information for a single specific account. Requires an AccountId. Use this after the customer has selected or identified a specific account from their account list. Returns current balance, available balance, account type, nickname, and status. |
 | **Get Recent Transactions** | Use this action to retrieve recent transaction history for a specific account. Requires an AccountId and optionally a Count (defaults to 5). Returns a list of transactions with date, description, amount, type (Credit/Debit), category, and running balance, plus summary totals (total credits, total debits, net change). |
 | **Get Customer Profile** | Use this action to look up the customer's personal information on file. Returns first name, last name, email, phone number, mailing address, and member-since date. This is read-only information — the customer cannot update their profile through this agent. |
+| **Get Loan Rates** | Use this action to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options. |
 
 > 💡 **Why descriptions matter so much:** In generative orchestration, the LLM reads every
 > action description on each turn to decide which action (if any) to call. Vague descriptions
@@ -332,6 +353,8 @@ For each action, configure the output to use the corresponding adaptive card tem
 | Get Account Balance | [`account-balance-card.json`](adaptive-cards/account-balance-card.json) |
 | Get Recent Transactions | [`transaction-list-card.json`](adaptive-cards/transaction-list-card.json) |
 | Get Customer Profile | [`customer-profile-card.json`](adaptive-cards/customer-profile-card.json) |
+| Get Loan Rates | [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) |
+| Calculate Loan Payment (MCP) | [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) |
 
 ---
 
@@ -375,12 +398,127 @@ The LLM handles all of this based on your instructions and action descriptions.
 
 ---
 
-### Step 7: Test the Agent
+### Step 7: Add External API Action (HTTP Connector → APIM)
+
+This step demonstrates calling an **external REST API** from Copilot Studio — a pattern
+you'll use whenever the data isn't in Dataverse (existing microservices, third-party APIs,
+legacy systems).
+
+> 📖 Full APIM setup guide: [`flows/apim-mock-setup.md`](flows/apim-mock-setup.md)
+
+#### 7.1 Set Up the Loan Rate API (or Get the Endpoint)
+
+**If facilitator-led:** Your workshop facilitator will provide the APIM endpoint URL
+and subscription key. Skip to 7.2.
+
+**If self-paced:** Follow [`flows/apim-mock-setup.md`](flows/apim-mock-setup.md) to create
+an APIM instance with a mock Loan Rates endpoint. This takes ~5 minutes with the
+Consumption tier.
+
+#### 7.2 Create the Power Automate Flow
+
+1. Open Power Automate → **New** → **Instant cloud flow**
+2. Trigger: **Run a flow from Copilot** (no input parameters needed)
+3. Add action: **HTTP**
+   - Method: `GET`
+   - URI: `https://<apim-name>.azure-api.net/loans/rates`
+   - Headers:
+     - `Ocp-Apim-Subscription-Key`: your subscription key
+4. Add action: **Parse JSON** — parse the HTTP response body
+5. Add action: **Respond to Copilot** — return the parsed loan rates
+
+#### 7.3 Register as an Action
+
+Register this flow in Copilot Studio as the **Get Loan Rates** action (description
+already defined in Step 5).
+
+#### 7.4 Test
+
+Try in the test panel:
+- "What are your current loan rates?"
+- "How much is a car loan?"
+- "What's the mortgage rate?"
+
+The orchestrator should call the HTTP-based action and display rates in the
+[`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) adaptive card.
+
+#### Why This Matters
+
+Most enterprise agents need to call existing APIs — not just Dataverse. The HTTP
+connector pattern works with any REST endpoint: internal microservices, third-party
+APIs, or API Management facades. APIM adds rate limiting, caching, authentication
+policies, and monitoring without changing the backend.
+
+---
+
+### Step 8: Add MCP Tool (Loan Payment Calculator)
+
+This step demonstrates connecting Copilot Studio to a **Model Context Protocol (MCP)**
+server — an open standard for exposing tools to AI agents. Unlike Power Automate actions,
+MCP tools are **discovered dynamically** by the agent from the server's tool manifest.
+
+> 📖 Full MCP server setup: [`flows/mcp-server-setup.md`](flows/mcp-server-setup.md)
+
+#### 8.1 Set Up the MCP Server (or Get the Endpoint)
+
+**If facilitator-led:** Your workshop facilitator will provide the MCP server endpoint
+URL. Skip to 8.2.
+
+**If self-paced:** Follow [`flows/mcp-server-setup.md`](flows/mcp-server-setup.md) to
+build and host the loan payment calculator MCP server. Options:
+- **Node.js** or **Python** implementation
+- Host on Azure Container Apps, or use Dev Tunnels for local testing
+
+#### 8.2 Register the MCP Server in Copilot Studio
+
+1. In Copilot Studio, go to **Actions** → **+ Add an action**
+2. Select **MCP Server** (Model Context Protocol)
+3. Enter the MCP server endpoint URL
+4. Copilot Studio discovers the `calculate_loan_payment` tool automatically
+5. Review the tool's description and parameter schema
+6. Enable the tool and save
+
+> 💡 **Key difference from Power Automate actions:** You don't write the action description —
+> it comes from the MCP server's tool manifest. The server declares what it can do, and
+> Copilot Studio discovers it. This is how MCP enables interoperability across platforms.
+
+#### 8.3 Test
+
+Try in the test panel:
+- "What would my payments be on a $25,000 car loan at 5.25% for 5 years?"
+- "Calculate payments for a $300,000 mortgage at 6.5% for 30 years"
+- "If I borrow 15 thousand at 10 percent for 3 years, what's the monthly?"
+
+The orchestrator should:
+1. Extract principal, rate, and term from the user's message
+2. Call the MCP `calculate_loan_payment` tool
+3. Display results in the [`loan-calculator-card.json`](adaptive-cards/loan-calculator-card.json) card
+
+#### 8.4 Test the Combined Flow (Rates → Calculator)
+
+This multi-turn test shows the orchestrator chaining an HTTP action and an MCP tool:
+
+| Turn | User Message | Expected Behavior |
+|---|---|---|
+| 1 | "What are your auto loan rates?" | Calls Get Loan Rates → shows rates card |
+| 2 | "Calculate payments for a $30,000 loan at the lowest rate for 5 years" | Knows the lowest auto rate from context → calls MCP calculator → shows payment card |
+
+#### Why This Matters
+
+MCP is an emerging open standard that enables:
+- **Tool portability** — The same MCP server works with Copilot Studio, Claude, and other MCP-compatible agents
+- **Dynamic discovery** — Agents discover tools at runtime; no manual action registration per tool
+- **Separation of concerns** — Tool logic lives in the MCP server, not in the agent platform
+- **Ecosystem growth** — As more tools become MCP-compatible, agents gain capabilities automatically
+
+---
+
+### Step 9: Test the Complete Agent
 
 This is where you'll see the power of generative orchestration — the agent handles
 natural variations, multi-turn conversations, and edge cases without explicit topic flows.
 
-#### 7.1 Basic Capability Tests
+#### 9.1 Basic Capability Tests
 
 | User Message | Expected Behavior |
 |---|---|
@@ -389,8 +527,10 @@ natural variations, multi-turn conversations, and edge cases without explicit to
 | "Show me my recent transactions" | Calls List Accounts → asks which account → calls Get Transactions → shows card |
 | "What accounts do I have?" | Calls List Accounts → shows account list card |
 | "What's my address?" | Calls Get Customer Profile → shows profile card |
+| "What are your loan rates?" | Calls Get Loan Rates (HTTP/APIM) → shows rates card |
+| "Calculate payments on a $20k loan at 6% for 4 years" | Calls MCP calculator → shows payment card |
 
-#### 7.2 Multi-Turn Conversation Tests
+#### 9.2 Multi-Turn Conversation Tests
 
 These test the LLM's ability to maintain context across turns:
 
@@ -401,7 +541,15 @@ These test the LLM's ability to maintain context across turns:
 | 3 | "And the transactions?" | Knows to show transactions for the same savings account |
 | 4 | "What about my checking?" | Switches context to checking → asks "balance or transactions?" |
 
-#### 7.3 Natural Language Variation Tests
+#### 9.3 Cross-Action Chaining Tests
+
+| Turn | User Message | Expected Behavior |
+|---|---|---|
+| 1 | "What are your auto loan rates?" | Calls Get Loan Rates → shows rates card |
+| 2 | "What would I pay monthly on a $25k loan at the lowest rate for 60 months?" | Uses rate from context → calls MCP calculator → shows payment card |
+| 3 | "What about for 36 months instead?" | Reuses principal and rate → calls MCP with new term |
+
+#### 9.4 Natural Language Variation Tests
 
 The LLM should handle these **without** explicit trigger phrases:
 
@@ -412,8 +560,10 @@ The LLM should handle these **without** explicit trigger phrases:
 | "Where do you think I live?" | Routes to Get Customer Profile, shows address |
 | "Show me everything" | Lists accounts, or asks what specifically they'd like |
 | "What did I spend at restaurants?" | Routes to transactions, filters may not apply but shows recent |
+| "How much would a car loan cost me?" | May call loan rates, then ask for details to calculate |
+| "I want to borrow 50 grand" | Routes to loan calculator, asks for rate and term |
 
-#### 7.4 Guardrail / Boundary Tests
+#### 9.5 Guardrail / Boundary Tests
 
 | User Message | Expected Behavior |
 |---|---|
@@ -423,7 +573,7 @@ The LLM should handle these **without** explicit trigger phrases:
 | "Should I invest in crypto?" | Declines — no financial advice per instructions |
 | "What are your branch hours?" | Answers from knowledge source (generative answers) |
 
-#### 7.5 Troubleshoot Routing Issues
+#### 9.6 Troubleshoot Routing Issues
 
 If the LLM calls the wrong action or doesn't call any:
 
@@ -435,26 +585,26 @@ If the LLM calls the wrong action or doesn't call any:
 
 ---
 
-### Step 8: Publish to Microsoft Teams
+### Step 10: Publish to Microsoft Teams
 
-#### 8.1 Configure the Teams Channel
+#### 10.1 Configure the Teams Channel
 
 1. In Copilot Studio, go to **Channels**
 2. Click **Microsoft Teams**
 3. Review the configuration (name, icon, description)
 4. Click **Turn on Teams**
 
-#### 8.2 Publish
+#### 10.2 Publish
 
 1. Go to **Publish** → click **Publish**
 2. Wait for the publishing process to complete
 3. Open the Teams link provided by Copilot Studio
 
-#### 8.3 Test in Teams
+#### 10.3 Test in Teams
 
 1. Open Microsoft Teams
 2. Find the agent in your chat list (or use the link from publish)
-3. Run through all test scenarios from Step 7
+1. Run through all test scenarios from Step 9
 4. Verify adaptive cards render correctly in the Teams client
 
 > 💡 **Tip:** Adaptive cards may render slightly differently in Teams vs the Copilot Studio
@@ -462,7 +612,7 @@ If the LLM calls the wrong action or doesn't call any:
 
 ---
 
-### Step 9: Export and Save
+### Step 11: Export and Save
 
 1. Go to **Solutions** in Power Apps
 2. Find the solution containing your agent
@@ -477,10 +627,12 @@ If the LLM calls the wrong action or doesn't call any:
 - [ ] Working Copilot Studio agent with generative orchestration enabled
 - [ ] Agent instructions written and tested
 - [ ] Knowledge source added with generative answers working
-- [ ] 4 Power Automate flows created and tested (List Accounts, Get Balance, Get Transactions, Get Profile)
-- [ ] Flows registered as plugin actions with LLM-optimized descriptions
-- [ ] Adaptive cards displaying financial data correctly
-- [ ] Multi-turn conversation working (context maintained across turns)
+- [ ] 4 Power Automate flows for Dataverse actions (List Accounts, Get Balance, Get Transactions, Get Profile)
+- [ ] 1 Power Automate flow calling external API via HTTP connector (Get Loan Rates via APIM)
+- [ ] MCP server deployed and registered (Loan Payment Calculator)
+- [ ] All actions registered with LLM-optimized descriptions
+- [ ] Adaptive cards displaying financial data correctly (6 card templates)
+- [ ] Multi-turn and cross-action chaining tested (rates → calculator flow)
 - [ ] Guardrails tested (refuses modifications, no cross-customer data, no financial advice)
 - [ ] Agent published and tested in Microsoft Teams
 - [ ] Solution exported (`.zip`)
@@ -496,6 +648,9 @@ If the LLM calls the wrong action or doesn't call any:
 | Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
 | Power Automate flow not appearing | Ensure the flow uses the "Run a flow from Copilot" trigger and is in the same environment |
 | Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
+| HTTP connector returns 401/403 | Verify APIM subscription key is correct in the flow header |
+| MCP tool not discovered | Check the MCP server endpoint is accessible; verify SSE transport is configured |
+| MCP tool called but returns error | Test the MCP server independently with the MCP Inspector |
 | Adaptive card not rendering | Validate JSON at [adaptivecards.io/designer](https://adaptivecards.io/designer/) |
 | Agent provides financial advice | Strengthen the security/boundaries section of your instructions |
 | Multi-turn context is lost | This can happen with very long conversations; test with shorter flows |
@@ -511,7 +666,19 @@ If the LLM calls the wrong action or doesn't call any:
 | **Action descriptions** | Tell the LLM *when* to use an action and *what* it returns |
 | **Knowledge grounding** | Generative answers sourced from uploaded documents |
 | **Minimal topics** | Only welcome + fallback needed; the orchestrator handles the rest |
+| **HTTP connector** | Call any external REST API from Power Automate (APIM, microservices, third-party) |
+| **MCP tools** | Open standard for connecting agents to external tool servers with dynamic discovery |
 | **Adaptive cards** | Rich, structured UI for displaying data in chat |
+
+### Three Action Patterns
+
+This lab demonstrated three ways to give an agent capabilities:
+
+| Pattern | Example | When to Use |
+|---|---|---|
+| **Power Automate + Dataverse** | Account queries | Data lives in Power Platform / Dataverse |
+| **Power Automate + HTTP** | Loan rates via APIM | Calling existing REST APIs or external services |
+| **MCP Tool** | Loan calculator | Reusable tool logic; cross-platform compatibility |
 
 ### Why This Approach Matters
 
