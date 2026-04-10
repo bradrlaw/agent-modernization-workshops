@@ -358,16 +358,32 @@ verify the knowledge source shows **Ready** status in the Knowledge tab.
 
 ---
 
-### Step 4: Build Power Automate Flows (Backend Actions)
+### Step 4: Build Dataverse Flows (Backend Actions)
 
-The agent needs actions to retrieve data from Dataverse. You'll create four
-Power Automate cloud flows. The LLM will decide **when** to call each one based on
-the tool's name and description — no trigger phrases needed.
+The agent needs actions to retrieve data from Dataverse. You'll create four cloud
+flows using **two different methods**:
+
+| Flow | Method | Why |
+|---|---|---|
+| List Accounts | Power Automate | Full control; teaches the Power Automate approach |
+| Get Account Balance | Power Automate | Different Dataverse action (Get row by ID) |
+| Get Recent Transactions | Copilot Studio Agent Flow | Built-in flow designer; faster creation |
+| Get Customer Profile | Copilot Studio Agent Flow | Reinforces the agent flow approach |
+
+The LLM will decide **when** to call each one based on the tool's name and
+description — no trigger phrases needed. Both methods produce identical flows; the
+difference is where you create them.
 
 > 📖 Full flow designs with output schemas: [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
 
 > ⚠️ **Important:** Make sure you're working in your **developer environment** (not the
-> default). Check the environment picker in the top-right of Power Automate.
+> default). Check the environment picker in the top-right of both Power Automate and
+> Copilot Studio.
+
+#### Method A: Power Automate Flows (4.1 – 4.2)
+
+These two flows are created in the full Power Automate portal, giving you experience
+with the standalone flow designer.
 
 #### 4.1 Flow: List Accounts
 
@@ -476,27 +492,41 @@ This flow returns detailed balance info for a single account.
 
 ---
 
+#### Method B: Copilot Studio Agent Flows (4.3 – 4.4)
+
+These two flows are created directly inside Copilot Studio using the built-in
+**Agent flows** designer. This is faster because the trigger and response action are
+pre-configured for you, and the flow is automatically registered as a tool.
+
 #### 4.3 Flow: Get Recent Transactions
 
 This flow returns recent transactions for a specific account with summary totals.
 
-1. **My flows** → **+ New flow** → **Instant cloud flow**
-2. Name: `Get Recent Transactions`
-3. Trigger: **When an agent calls the flow** → **Create**
+1. Open your **Virtual Banking Assistant** in [Copilot Studio](https://copilotstudio.microsoft.com)
+2. Click **Tools** in the top navigation bar
+3. Click **+ Add a tool**
+4. In the Add tool dialog, look for **Agent flows** and click **New Agent flow**
+
+   > 💡 The agent flow designer opens with the **When an agent calls the flow** trigger
+   > and **Respond to the agent** action already in place.
+
+5. Click the flow name at the top and rename it to `Get Recent Transactions`
 
 **Add input parameters:**
 
-4. **+ Add an input** → **Text**
+6. Click the **When an agent calls the flow** trigger to expand it
+7. **+ Add an input** → **Text**
    - Name: `AccountId`
    - Description: `The account ID to get transactions for`
-5. **+ Add an input** → **Number**
+8. **+ Add an input** → **Number**
    - Name: `Count`
    - Description: `Number of recent transactions to return (default 5)`
 
 **Add the Dataverse query:**
 
-6. **+ New step** → **Dataverse** → **List rows**
-7. Configure:
+9. Click the **+** between the trigger and the response action
+10. Search for **Dataverse** → select **List rows**
+11. Configure:
     - **Table name:** Banking Transactions
     - Click **Show advanced options**
     - **Filter rows:** `cr_accountid eq '@{triggerBody()['text']}'`
@@ -509,15 +539,16 @@ This flow returns recent transactions for a specific account with summary totals
       > If Count is blank/zero, you can add a **Condition** or **Compose** step
       > to default to 5: `if(equals(triggerBody()?['number'], null), 5, triggerBody()?['number'])`
 
-**Add the response:**
+**Configure the response:**
 
-8. **+ New step** → **Respond to the agent**
-9. Click **+ Add an output** → **Text**
+12. Click the **Respond to the agent** action
+13. Click **+ Add an output** → **Text**
     - Name: `Transactions`
     - Value: Click → **Expression** tab → enter:
       `string(outputs('List_rows')?['body/value'])`
       Click **OK**
-10. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
+14. Click **Publish** (top right of the flow designer)
+15. Click **Go back to agent** — the flow is automatically added as a tool
 
 ---
 
@@ -525,32 +556,39 @@ This flow returns recent transactions for a specific account with summary totals
 
 This flow returns the customer's profile information.
 
-1. **My flows** → **+ New flow** → **Instant cloud flow**
-2. Name: `Get Customer Profile`
-3. Trigger: **When an agent calls the flow** → **Create**
+1. In Copilot Studio, click **Tools** → **+ Add a tool** → **Agent flows** → **New Agent flow**
+2. Rename the flow to `Get Customer Profile`
 
 **Add input parameter:**
 
-4. **+ Add an input** → **Text**
+3. Expand the trigger → **+ Add an input** → **Text**
    - Name: `CustomerId`
    - Description: `The customer ID to look up`
 
 **Add the Dataverse lookup:**
 
-5. **+ New step** → **Dataverse** → **List rows** (or **Get a row by ID** if using GUIDs)
+4. Click the **+** between the trigger and response
+5. Search **Dataverse** → select **List rows** (or **Get a row by ID** if using GUIDs)
 6. Configure:
     - **Table name:** Banking Customers
     - **Filter rows:** `cr_customerid eq '@{triggerBody()['text']}'`
 
-**Add the response:**
+**Configure the response:**
 
-7. **+ New step** → **Respond to the agent**
+7. Click the **Respond to the agent** action
 8. Click **+ Add an output** → **Text**
     - Name: `Profile`
     - Value: Click → **Expression** tab → enter:
       `string(outputs('List_rows')?['body/value'])`
       Click **OK**
-9. **Save** → **Test** with `CustomerId`: `CUST-1001`
+9. Click **Publish**
+10. Click **Go back to agent** — the flow is automatically added as a tool
+
+> 💡 **Agent flows vs Power Automate flows:** Both create the same type of cloud flow.
+> The agent flow approach is faster because it pre-configures the trigger/response and
+> auto-registers the tool. The Power Automate approach gives you full access to the
+> flow designer, connectors gallery, and flow management features. Use whichever fits
+> your workflow.
 
 ---
 
@@ -580,9 +618,13 @@ This is where the generative orchestration model differs most from classic Copil
 Instead of wiring actions into topic nodes, you register them as **tools** with
 **descriptions the LLM reads** to decide when to invoke them.
 
-#### 5.1 Add Each Flow as a Tool
+#### 5.1 Add Power Automate Flows as Tools
 
-For each of the four Dataverse flows you created in Step 4, register it as a tool:
+The two flows you created via **agent flows** in Copilot Studio (Get Recent Transactions
+and Get Customer Profile) are **already registered as tools** — they were auto-added when
+you published them. You only need to register the two Power Automate flows from Step 4.
+
+For each of the **two Power Automate flows** (List Accounts and Get Account Balance):
 
 1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
 2. Click **Tools** in the top navigation bar
@@ -605,7 +647,7 @@ For each of the four Dataverse flows you created in Step 4, register it as a too
 11. In the **Description** field, enter the description from the table below
 12. Click **Finish**
 
-**Repeat steps 3–12 for each remaining flow:**
+**Repeat steps 3–12 for Get Account Balance.**
 
 | Flow | Tool Name | Description |
 |---|---|---|
@@ -620,7 +662,19 @@ For each of the four Dataverse flows you created in Step 4, register it as a too
 > **when** to use the tool and **what it returns** give the LLM the context to make
 > good decisions.
 
-#### 5.2 Verify Tools Are Enabled
+#### 5.2 Update Descriptions for Agent Flow Tools
+
+The two agent flow tools (Get Recent Transactions, Get Customer Profile) were auto-added
+but may have generic descriptions. Update them with the detailed descriptions from the
+table above:
+
+1. Click **Tools** in the top navigation bar
+2. Click on **Get Recent Transactions** to open its configuration
+3. Update the **Description** field with the description from the table above
+4. Click **Save**
+5. Repeat for **Get Customer Profile**
+
+#### 5.3 Verify Tools Are Enabled
 
 After adding all four tools, verify them:
 
@@ -629,7 +683,7 @@ After adding all four tools, verify them:
 3. Each tool should show a green **On** status toggle — if any are off, click the toggle to enable them
 4. Click on any tool to review its description and parameters
 
-#### 5.3 Configure Tool Completion (Response Behavior)
+#### 5.4 Configure Tool Completion (Response Behavior)
 
 For each tool, you can configure what happens after the tool finishes running. This is
 done in the tool's **Completion** section.
