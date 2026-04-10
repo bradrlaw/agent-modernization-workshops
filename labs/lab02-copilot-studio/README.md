@@ -408,8 +408,8 @@ This flow returns all accounts belonging to a customer.
 **Add the response:**
 
 18. Click **+ New step**
-19. Search for **Respond to Copilot**
-20. Select **Respond to a Copilot action**
+19. Search for **Respond to the agent**
+20. Select **Respond to the agent**
 21. Click **+ Add an output** → **Text**
     - Name: `AccountList`
     - Value: Click in the value field → select **Expression** tab → enter:
@@ -456,8 +456,7 @@ This flow returns detailed balance info for a single account.
 
 **Add the response:**
 
-10. **+ New step** → **Respond to a Copilot action**
-11. Add outputs for each field you want to return:
+10. **+ New step** → **Respond to the agent**11. Add outputs for each field you want to return:
     - **Text** output `AccountId` → Dynamic content: Account ID column
     - **Text** output `AccountType` → Dynamic content: Account Type column
     - **Text** output `Nickname` → Dynamic content: Nickname column
@@ -508,8 +507,7 @@ This flow returns recent transactions for a specific account with summary totals
 
 **Add the response:**
 
-8. **+ New step** → **Respond to a Copilot action**
-9. Add a **Text** output `Transactions` with the expression:
+8. **+ New step** → **Respond to the agent**9. Add a **Text** output `Transactions` with the expression:
    `string(outputs('List_rows')?['body/value'])`
 10. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
 
@@ -538,7 +536,7 @@ This flow returns the customer's profile information.
 
 **Add the response:**
 
-7. **+ New step** → **Respond to a Copilot action**
+7. **+ New step** → **Respond to the agent**
 8. Add a **Text** output `Profile` with the expression:
    `string(outputs('List_rows')?['body/value'])`
 9. **Save** → **Test** with `CustomerId`: `CUST-1001`
@@ -788,7 +786,7 @@ Consumption tier.
 **Return the result to Copilot:**
 
 16. Click **+ New step**
-17. Search for `Respond to Copilot` and select **Respond to Copilot**
+17. Search for `Respond to the agent` and select **Respond to the agent**
 18. Click **+ Add an output** → select **Text**
 19. In **Enter a title**, type: `LoanRatesJSON`
 20. In the **Enter a value to respond** field, click the field, switch to the **Expression** tab, and enter:
