@@ -189,6 +189,11 @@ CSV files are provided in [`sample-data/`](sample-data/) for easy import.
 6. Click **Import**
 7. Wait for the import to complete, then verify: you should see **3 rows** in the table
 
+> ⚠️ **Important:** After verifying the data, click the **✓ Save** button (or **Save and close**)
+> before navigating away from the table view. If you leave without saving, you'll get a
+> warning that changes will be discarded. Always save first, then use the **← Back** button
+> or breadcrumb navigation to return to the Tables list.
+
 8. Repeat for **Banking Accounts** using `sample-data/accounts.csv` → verify **7 rows**
 9. Repeat for **Banking Transactions** using `sample-data/transactions.csv` → verify **20 rows**
 
