@@ -380,7 +380,8 @@ This flow returns all accounts belonging to a customer.
 
 13. Click **+ New step** (or the **+** button below the trigger)
 14. Search for **Dataverse** in the action search box
-15. Select **List rows**
+15. Select **List rows** — if you don't see it immediately, click **See more** to expand
+    the full list of Dataverse actions
 16. Configure:
     - **Table name:** Select your Banking Accounts table
     - Click **Show advanced options**
