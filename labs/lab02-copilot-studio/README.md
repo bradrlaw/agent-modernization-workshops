@@ -296,7 +296,7 @@ before taking action.
    > on Generative mode being enabled.
 
 4. Under **Content moderation**, set to **Moderate**
-5. Ensure **Allow the AI to use its own general knowledge** is toggled **off** — for a
+5. Ensure **Allow ungrounded responses** is toggled **off** — for a
    financial services agent, you want responses grounded only in your knowledge sources
    and actions, not the LLM's general training data. Leaving this on could lead to
    inaccurate or inappropriate answers outside the agent's purpose.
