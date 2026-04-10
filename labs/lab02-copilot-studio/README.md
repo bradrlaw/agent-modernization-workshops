@@ -424,7 +424,10 @@ This flow returns all accounts belonging to a customer.
 24. Click **+ Add an output** → **Text**
     - Name: `AccountList`
     - Value: Click in the value field → select the **Dynamic content** tab →
-      choose **Outputs** (from the Compose step)
+      under the **Compose** section, select **Outputs**
+
+      > 💡 The Compose step shows a single generic **Outputs** entry in Dynamic content —
+      > this is normal. It contains the full string result from your expression.
 
 25. Click **Save** (top right)
 
@@ -475,7 +478,7 @@ This flow returns detailed balance info for a single account.
 12. **+ New step** → **Respond to the agent**
 13. Click **+ Add an output** → **Text**
     - Name: `AccountDetails`
-    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+    - Value: Click → **Dynamic content** tab → under **Compose**, select **Outputs**
 
 14. **Save** → **Test** with `AccountId`: use the Dataverse GUID of ACCT-4521
     (or use the List rows approach with the text ID)
@@ -524,7 +527,7 @@ This flow returns recent transactions for a specific account with summary totals
 10. **+ New step** → **Respond to the agent**
 11. Click **+ Add an output** → **Text**
     - Name: `Transactions`
-    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+    - Value: Click → **Dynamic content** tab → under **Compose**, select **Outputs**
 12. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
 
 ---
@@ -559,7 +562,7 @@ This flow returns the customer's profile information.
 9. **+ New step** → **Respond to the agent**
 10. Click **+ Add an output** → **Text**
     - Name: `Profile`
-    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+    - Value: Click → **Dynamic content** tab → under **Compose**, select **Outputs**
 11. **Save** → **Test** with `CustomerId`: `CUST-1001`
 
 ---
@@ -818,7 +821,7 @@ Consumption tier.
 22. Click **+ Add an output** → select **Text**
 23. In **Enter a title**, type: `LoanRatesJSON`
 24. In the **Enter a value to respond** field, click → **Dynamic content** tab →
-    select **Outputs** (from the Compose step)
+    under **Compose**, select **Outputs**
 25. Click **Save** (top-right)
 26. Click **Test** → **Manually** → **Run** to verify the flow executes successfully
 
