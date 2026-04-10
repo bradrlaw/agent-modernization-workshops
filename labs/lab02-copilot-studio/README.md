@@ -177,7 +177,9 @@ Power Automate actions have something to query.
 
 CSV files are provided in [`sample-data/`](sample-data/) for easy import.
 
-**Import order matters** — import Customers first, then Accounts, then Transactions.
+> 💡 Since we're using plain text columns (not Dataverse lookups), import order doesn't
+> matter — there are no foreign key constraints. If you had used lookup columns instead,
+> you'd need to import Customers → Accounts → Transactions in that order.
 
 1. In Power Apps, go to **Tables** → click **Banking Customers**
 2. In the table toolbar, click the **▼ dropdown** next to "Edit" → **Import** → **Import data from Excel**
