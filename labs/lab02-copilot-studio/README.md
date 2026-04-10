@@ -289,7 +289,7 @@ before taking action.
 
 1. In your agent, click **Settings** (gear icon in the top-right corner of the agent editor)
 2. In the Settings panel, click **Generative AI** in the left sidebar
-3. Under **How should your copilot interact with people?**, select **Generative** (not Classic)
+3. Under **Use generative AI orchestration for your agent's responses?**, select **Generative** (not Classic)
 
    > ⚠️ **This is critical.** If left on "Classic," the agent will use the traditional
    > topic-trigger pattern instead of LLM-based orchestration. The entire lab depends
