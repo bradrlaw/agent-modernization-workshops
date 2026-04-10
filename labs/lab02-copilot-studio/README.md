@@ -264,50 +264,203 @@ The agent needs actions to retrieve data from Dataverse. You'll create four
 Power Automate cloud flows. The LLM will decide **when** to call each one based on
 the action's name and description — no trigger phrases needed.
 
-> 📖 Full flow designs with schemas: [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
+> 📖 Full flow designs with output schemas: [`flows/flow-design-guide.md`](flows/flow-design-guide.md)
+
+> ⚠️ **Important:** Make sure you're working in your **developer environment** (not the
+> default). Check the environment picker in the top-right of Power Automate.
 
 #### 4.1 Flow: List Accounts
 
-1. Open [Power Automate](https://make.powerautomate.com) → **Cloud flows** → **New** → **Instant cloud flow**
-2. Choose the trigger: **Run a flow from Copilot**
-3. Add an input parameter: `CustomerId` (Text)
-4. Add action: **List rows** (Dataverse: Banking Accounts)
-   - Filter rows: `_customerid_value eq '{CustomerId}'`
-5. Add action: **Select** — map to clean output schema
-6. Add action: **Respond to Copilot** — return the account list
+This flow returns all accounts belonging to a customer.
+
+1. Open [https://make.powerautomate.com](https://make.powerautomate.com)
+2. Confirm your **developer environment** is selected (top-right environment picker)
+3. In the left nav, click **My flows**
+4. Click **+ New flow** → **Instant cloud flow**
+5. Give it a name: `List Accounts`
+6. Under "Choose how to trigger this flow", select **Run a flow from Copilot**
+7. Click **Create**
+
+**Add input parameter:**
+
+8. Click the **Run a flow from Copilot** trigger card to expand it
+9. Click **+ Add an input**
+10. Select **Text**
+11. Rename the input to `CustomerId`
+12. Add a description: `The authenticated customer's ID`
+
+**Add the Dataverse query:**
+
+13. Click **+ New step** (or the **+** button below the trigger)
+14. Search for **Dataverse** in the action search box
+15. Select **List rows**
+16. Configure:
+    - **Table name:** Select your Banking Accounts table
+    - Click **Show advanced options**
+    - **Filter rows:** Enter `cr_customerid eq '@{triggerBody()['text']}'`
+
+    > 💡 The exact column name depends on your table's schema prefix. It may be
+    > `cr_customerid`, `crf9a_customerid`, or similar. Check your table's column
+    > names in Power Apps → Tables → Banking Accounts → Columns.
+
+**Add the response:**
+
+17. Click **+ New step**
+18. Search for **Respond to Copilot**
+19. Select **Respond to a Copilot action**
+20. Click **+ Add an output** → **Text**
+    - Name: `AccountList`
+    - Value: Click in the value field → select **Expression** tab → enter:
+      `string(outputs('List_rows')?['body/value'])`
+
+    > This returns the Dataverse rows as a JSON string. Alternatively, you can use
+    > a **Select** action between List rows and Respond to map specific fields.
+
+21. Click **Save** (top right)
+
+**Test the flow:**
+
+22. Click **Test** (top right) → **Manually** → **Test**
+23. Enter `CustomerId`: `CUST-1001`
+24. Click **Run flow**
+25. Verify you get a successful run with account data in the output
+
+---
 
 #### 4.2 Flow: Get Account Balance
 
-1. Create a new flow with trigger: **Run a flow from Copilot**
-2. Input: `AccountId` (Text)
-3. Action: **Get a row by ID** (Dataverse: Banking Accounts)
-4. Action: **Respond to Copilot** — return balance details
+This flow returns detailed balance info for a single account.
+
+1. Go back to **My flows** → **+ New flow** → **Instant cloud flow**
+2. Name: `Get Account Balance`
+3. Trigger: **Run a flow from Copilot**
+4. Click **Create**
+
+**Add input parameter:**
+
+5. Expand the trigger → **+ Add an input** → **Text**
+6. Name: `AccountId`
+7. Description: `The account ID to look up`
+
+**Add the Dataverse lookup:**
+
+8. **+ New step** → search **Dataverse** → select **Get a row by ID**
+9. Configure:
+    - **Table name:** Banking Accounts
+    - **Row ID:** Click the value field → from the **Dynamic content** panel, select `AccountId`
+
+    > ⚠️ **Row ID** expects the Dataverse GUID, not your custom Account ID field.
+    > If you're using a custom text primary key, use **List rows** with a filter
+    > instead: `cr_accountid eq '@{triggerBody()['text']}'` and take the first row.
+
+**Add the response:**
+
+10. **+ New step** → **Respond to a Copilot action**
+11. Add outputs for each field you want to return:
+    - **Text** output `AccountId` → Dynamic content: Account ID column
+    - **Text** output `AccountType` → Dynamic content: Account Type column
+    - **Text** output `Nickname` → Dynamic content: Nickname column
+    - **Text** output `CurrentBalance` → Dynamic content: Current Balance column
+    - **Text** output `AvailableBalance` → Dynamic content: Available Balance column
+    - **Text** output `Status` → Dynamic content: Status column
+
+    > 💡 Alternatively, return the entire row as a JSON string using
+    > `string(outputs('Get_a_row_by_ID')?['body'])` in a single Text output.
+
+12. **Save** → **Test** with `AccountId`: use the Dataverse GUID of ACCT-4521
+    (or use the List rows approach with the text ID)
+
+---
 
 #### 4.3 Flow: Get Recent Transactions
 
-1. Create a new flow with trigger: **Run a flow from Copilot**
-2. Inputs: `AccountId` (Text), `Count` (Integer, default 5)
-3. Action: **List rows** (Dataverse: Banking Transactions)
-   - Filter: `_accountid_value eq '{AccountId}'`
-   - Order by: `date desc`
-   - Top count: `{Count}`
-4. Action: **Select** — map to clean output
-5. Action: **Compose** — calculate summary (total credits, debits, net change)
-6. Action: **Respond to Copilot** — return transactions + summary
+This flow returns recent transactions for a specific account with summary totals.
+
+1. **My flows** → **+ New flow** → **Instant cloud flow**
+2. Name: `Get Recent Transactions`
+3. Trigger: **Run a flow from Copilot** → **Create**
+
+**Add input parameters:**
+
+4. **+ Add an input** → **Text**
+   - Name: `AccountId`
+   - Description: `The account ID to get transactions for`
+5. **+ Add an input** → **Number**
+   - Name: `Count`
+   - Description: `Number of recent transactions to return (default 5)`
+
+**Add the Dataverse query:**
+
+6. **+ New step** → **Dataverse** → **List rows**
+7. Configure:
+    - **Table name:** Banking Transactions
+    - Click **Show advanced options**
+    - **Filter rows:** `cr_accountid eq '@{triggerBody()['number']}'`
+
+      > Adjust the column name to match your schema. Use the Account ID column name.
+
+    - **Sort by:** `cr_date desc` (your Date column name + ` desc`)
+    - **Row count:** Click the field → **Dynamic content** → select `Count`
+
+      > If Count is blank/zero, you can add a **Condition** or **Compose** step
+      > to default to 5: `if(equals(triggerBody()?['number'], null), 5, triggerBody()?['number'])`
+
+**Add the response:**
+
+8. **+ New step** → **Respond to a Copilot action**
+9. Add a **Text** output `Transactions` with the expression:
+   `string(outputs('List_rows')?['body/value'])`
+10. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
+
+---
 
 #### 4.4 Flow: Get Customer Profile
 
-1. Create a new flow with trigger: **Run a flow from Copilot**
-2. Input: `CustomerId` (Text)
-3. Action: **Get a row by ID** (Dataverse: Banking Customers)
-4. Action: **Respond to Copilot** — return profile data
+This flow returns the customer's profile information.
+
+1. **My flows** → **+ New flow** → **Instant cloud flow**
+2. Name: `Get Customer Profile`
+3. Trigger: **Run a flow from Copilot** → **Create**
+
+**Add input parameter:**
+
+4. **+ Add an input** → **Text**
+   - Name: `CustomerId`
+   - Description: `The customer ID to look up`
+
+**Add the Dataverse lookup:**
+
+5. **+ New step** → **Dataverse** → **List rows** (or **Get a row by ID** if using GUIDs)
+6. Configure:
+    - **Table name:** Banking Customers
+    - **Filter rows:** `cr_customerid eq '@{triggerBody()['text']}'`
+
+**Add the response:**
+
+7. **+ New step** → **Respond to a Copilot action**
+8. Add a **Text** output `Profile` with the expression:
+   `string(outputs('List_rows')?['body/value'])`
+9. **Save** → **Test** with `CustomerId`: `CUST-1001`
+
+---
 
 #### 4.5 Test Each Flow
 
-Before connecting to Copilot Studio, test each flow independently:
-1. Click **Test** → **Manually**
-2. Enter sample input: `CustomerId: CUST-1001` or `AccountId: ACCT-4521`
-3. Verify the output matches the expected schema
+Before connecting to Copilot Studio, verify each flow runs successfully:
+
+| Flow | Test Input | Expected Output |
+|---|---|---|
+| List Accounts | `CustomerId: CUST-1001` | 3 accounts (Checking, Savings, CD) |
+| Get Account Balance | AccountId for ACCT-4521 | Primary Checking, $3,842.56 |
+| Get Recent Transactions | AccountId for ACCT-4521, Count: 5 | 5 most recent transactions |
+| Get Customer Profile | `CustomerId: CUST-1001` | Alex Morgan's profile |
+
+> 🔧 **Troubleshooting:**
+> - **"Table not found"** — Make sure you're in the correct environment in Power Automate
+> - **"No rows returned"** — Check the filter column name matches your Dataverse schema
+>   (go to Power Apps → Tables → Columns to find the exact internal name)
+> - **"Invalid expression"** — Make sure you're using the Expression tab, not Dynamic content,
+>   when entering formulas like `string(...)`
 
 ---
 

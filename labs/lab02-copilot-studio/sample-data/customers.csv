@@ -1,0 +1,4 @@
+Customer ID,First Name,Last Name,Email,Phone,Street,City,State,Zip,Member Since
+CUST-1001,Alex,Morgan,alex.morgan@example.com,(555) 123-4567,742 Evergreen Terrace,Springfield,VA,22150,2018-03-15
+CUST-1002,Jordan,Rivera,jordan.rivera@example.com,(555) 234-5678,1600 Pennsylvania Ave,Arlington,VA,22201,2020-07-22
+CUST-1003,Taylor,Chen,taylor.chen@example.com,(555) 345-6789,350 Fifth Avenue,Norfolk,VA,23510,2022-01-10
