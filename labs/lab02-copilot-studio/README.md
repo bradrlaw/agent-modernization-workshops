@@ -382,7 +382,16 @@ This flow returns all accounts belonging to a customer.
 14. Search for **Dataverse** in the action search box
 15. Select **List rows** — if you don't see it immediately, click **See more** to expand
     the full list of Dataverse actions
-16. Configure:
+16. You'll be prompted to create a **connection** before configuring the action:
+    - **Connection name:** Leave the default or enter a name like `Dataverse`
+    - **Authentication type:** Select **OAuth** (or leave the default)
+    - Click **Sign in** and authenticate with your account
+    - Once connected, the action configuration will appear
+
+    > 💡 This connection setup only happens the **first time** you use a Dataverse action.
+    > Subsequent Dataverse actions in this flow (and other flows) will reuse the same connection.
+
+17. Configure:
     - **Table name:** Select your Banking Accounts table
     - Click **Show advanced options**
     - **Filter rows:** Enter `cr_customerid eq '@{triggerBody()['text']}'`
@@ -393,10 +402,10 @@ This flow returns all accounts belonging to a customer.
 
 **Add the response:**
 
-17. Click **+ New step**
-18. Search for **Respond to Copilot**
-19. Select **Respond to a Copilot action**
-20. Click **+ Add an output** → **Text**
+18. Click **+ New step**
+19. Search for **Respond to Copilot**
+20. Select **Respond to a Copilot action**
+21. Click **+ Add an output** → **Text**
     - Name: `AccountList`
     - Value: Click in the value field → select **Expression** tab → enter:
       `string(outputs('List_rows')?['body/value'])`
@@ -404,11 +413,11 @@ This flow returns all accounts belonging to a customer.
     > This returns the Dataverse rows as a JSON string. Alternatively, you can use
     > a **Select** action between List rows and Respond to map specific fields.
 
-21. Click **Save** (top right)
+22. Click **Save** (top right)
 
 **Test the flow:**
 
-22. Click **Test** (top right) → **Manually** → **Test**
+23. Click **Test** (top right) → **Manually** → **Test**
 23. Enter `CustomerId`: `CUST-1001`
 24. Click **Run flow**
 25. Verify you get a successful run with account data in the output
