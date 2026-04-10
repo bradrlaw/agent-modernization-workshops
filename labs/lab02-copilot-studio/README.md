@@ -55,15 +55,23 @@ This lab deliberately uses the **generative (LLM-first)** approach:
 
 | Requirement | Details |
 |---|---|
-| Power Platform environment | Non-production environment provisioned |
-| Copilot Studio | Enabled in tenant |
+| Power Platform environment | Developer or Trial environment with Dataverse |
+| Copilot Studio | Trial or licensed — enabled in the environment |
 | Dataverse | Enabled in the environment |
 | Maker role | Assigned to your account |
 | Power Automate | Access to create cloud flows |
 | Microsoft Teams | For testing the published agent |
+| Node.js v18+ | For the MCP server (Step 8) |
+| Dev Tunnels CLI | For exposing the MCP server (`winget install Microsoft.devtunnel`) |
 
-> ⚠️ See [environment checklist](../../docs/environment-checklist.md) section A1 if
-> your environment is not yet provisioned.
+> 🆕 **Need an environment?** The fastest path is to create a free **Microsoft 365
+> Developer tenant** + **Power Platform trial**. See the
+> [self-service setup guide](../../docs/environment-checklist.md#self-service-environment-setup-recommended)
+> for step-by-step instructions. No Azure subscription required.
+>
+> ⚠️ For enterprise environments, see the
+> [environment checklist](../../docs/environment-checklist.md#enterprise-environment-setup)
+> section A1.
 
 ---
 
