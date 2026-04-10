@@ -15,7 +15,7 @@ conversation context.
 
 The lab demonstrates three action patterns:
 1. **Power Automate + Dataverse** — Standard data queries (accounts, transactions, profile)
-2. **Power Automate + HTTP connector** — Calling an external REST API (loan rates via APIM)
+2. **REST API tool** — Calling an external REST API directly via OpenAPI spec (loan rates via APIM)
 3. **MCP tool** — Connecting to a Model Context Protocol server (loan payment calculator)
 
 > 📖 **Scenario details:** See [`scenario.md`](scenario.md) for the complete use case
@@ -705,11 +705,13 @@ The LLM handles routing based on your instructions and tool descriptions.
 
 ---
 
-### Step 7: Add External API Tool (HTTP Connector → APIM)
+### Step 7: Add External API Tool (REST API → APIM)
 
-This step demonstrates calling an **external REST API** from Copilot Studio — a pattern
-you'll use whenever the data isn't in Dataverse (existing microservices, third-party APIs,
-legacy systems).
+This step demonstrates connecting Copilot Studio directly to an **external REST API** —
+a pattern you'll use whenever the data isn't in Dataverse (existing microservices,
+third-party APIs, legacy systems). Instead of building a Power Automate flow with an
+HTTP connector, Copilot Studio can call the API directly using its built-in REST API
+tool type and an OpenAPI specification.
 
 > 📖 Full APIM setup guide: [`flows/apim-mock-setup.md`](flows/apim-mock-setup.md)
 
@@ -722,92 +724,72 @@ and subscription key. Skip to 7.2.
 an APIM instance with a mock Loan Rates endpoint. This takes ~5 minutes with the
 Consumption tier.
 
-#### 7.2 Create the Power Automate Flow
+#### 7.2 Update the OpenAPI Specification
 
-1. Open [https://make.powerautomate.com](https://make.powerautomate.com)
-2. Confirm your **developer environment** is selected (top-right environment picker)
-3. In the left nav, click **My flows**
-4. Click **+ New flow** → **Instant cloud flow**
-5. Name: `Get Loan Rates`
-6. Trigger: select **When an agent calls the flow** (no input parameters needed for this flow)
-7. Click **Create**
+An OpenAPI spec file is provided at [`flows/loan-rates-openapi.json`](flows/loan-rates-openapi.json).
+Before uploading it, you need to update the host to match your APIM instance:
 
-**Add the HTTP action:**
+1. Open `flows/loan-rates-openapi.json` in a text editor
+2. Find the `"host"` field (near the top) and replace `REPLACE-WITH-YOUR-APIM-NAME`
+   with your actual APIM instance name:
+   ```json
+   "host": "your-apim-name.azure-api.net",
+   ```
+3. Save the file
 
-8. Click **+ New step** (or the **+** button below the trigger)
-9. Search for `HTTP` in the action search box
-10. Select **HTTP** (the built-in premium connector)
+#### 7.3 Add the REST API Tool to Copilot Studio
 
-    > ⚠️ **Premium connector note:** The HTTP connector requires a premium license. In trial
-    > and developer environments, this is typically included. If you see a license error,
-    > ask your facilitator for a workaround.
-
-11. Configure the HTTP action:
-    - **Method:** `GET`
-    - **URI:** Paste the APIM endpoint URL provided by your facilitator, e.g.:
-      `https://<apim-name>.azure-api.net/loans/rates`
-    - **Headers:** Click **+ Add new item** and add:
-      - **Key:** `Ocp-Apim-Subscription-Key`
-      - **Value:** Paste the subscription key provided by your facilitator
-
-**Parse the response:**
-
-12. Click **+ New step**
-13. Search for `Parse JSON` and select it
-14. In the **Content** field, click it, then select the **Dynamic content** tab, and choose **Body** (from the HTTP step)
-15. In the **Schema** field, paste the following schema:
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "rates": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "product": { "type": "string" },
-          "minAPR": { "type": "number" },
-          "maxAPR": { "type": "number" },
-          "term": { "type": "string" }
-        }
-      }
-    },
-    "effectiveDate": { "type": "string" },
-    "disclaimer": { "type": "string" }
-  }
-}
-```
-
-**Return the result to the agent:**
-
-16. Click **+ New step**
-17. Search for `Respond to the agent` and select **Respond to the agent**
-18. Click **+ Add an output** → select **Text**
-19. In **Enter a title**, type: `LoanRatesJSON`
-20. In the **Enter a value to respond** field, click → **Expression** tab → enter:
-    ```
-    string(body('Parse_JSON'))
-    ```
-21. Click **OK** to insert the expression
-22. Click **Save** (top-right)
-23. Click **Test** → **Manually** → **Run** to verify the flow executes successfully
-
-    > ⚠️ If the test fails with a 401 or 403 error, double-check your APIM subscription key.
-    > If it fails with a connection error, ensure the APIM endpoint URL is correct.
-
-#### 7.3 Register as a Tool
-
-1. Return to your agent in [Copilot Studio](https://copilotstudio.microsoft.com)
+1. Open your **Virtual Banking Assistant** agent in [Copilot Studio](https://copilotstudio.microsoft.com)
 2. Click **Tools** in the top navigation bar
 3. Click **+ Add a tool**
-4. Find and click **Get Loan Rates**
-5. This flow has no input parameters, so just review the output
-6. Click **Next**
-7. Set the **Name** to: `Get Loan Rates`
-8. Set the **Description** to: `Use this tool to retrieve current loan interest rates offered by the institution. Returns rates for all product types (auto loans, personal loans, mortgages, HELOC) with minimum and maximum APR ranges. Use this when the customer asks about loan rates, interest rates, or financing options.`
-9. Click **Finish**
-10. Verify the tool appears in your Tools list with a green **On** toggle
+4. In the Add tool pane, click **New tool** → **REST API**
+5. Upload the `loan-rates-openapi.json` file (drag and drop or browse to select it)
+6. Copilot Studio will parse the spec and show the API details (name, description, endpoints)
+7. Verify the details look correct, then click **Next**
+
+**Configure the API description:**
+
+8. Review the **Description** field — it should be pre-populated from the OpenAPI spec:
+   `"Returns current loan interest rates by product type..."`
+9. Improve the description if needed. A good description helps the LLM know when to call
+   this tool. For example:
+   `"Use this tool to retrieve current loan interest rates offered by the institution. Returns rates for all product types including auto loans, personal loans, mortgages, and HELOC with minimum and maximum APR ranges. Use this when a customer asks about loan rates, interest rates, or financing options."`
+10. Under **Solution**, select your solution or leave blank (one will be created for you)
+11. Click **Next**
+
+**Configure authentication:**
+
+12. On the **Authentication** page, select **API key**
+13. Configure:
+    - **Parameter label:** `APIM Subscription Key`
+    - **Parameter name:** `Ocp-Apim-Subscription-Key`
+    - **Parameter location:** **Header**
+14. Click **Next**
+
+**Select tools from the API:**
+
+15. You'll see the available operations from the spec. Select **Get current loan rates**
+    (the `GET /rates` endpoint)
+16. Review the tool name and description — update if needed
+17. Click **Next**
+18. Review the input/output parameters — the descriptions come from the OpenAPI spec
+19. Click **Next**
+
+**Review and publish:**
+
+20. Review the summary of your configured REST API tool
+21. Click **Next** to publish the tool
+22. Once publishing completes, click **Create connection**
+23. You'll be returned to the **Add tool** screen — find your newly created tool
+    under the **REST API** section
+24. Click on it and enter your **APIM subscription key** when prompted to create the connection
+25. Click **Add and configure** to add the tool to your agent
+
+> 💡 **Key advantage of REST API tools over Power Automate HTTP flows:**
+> - No Power Automate flow needed — fewer moving parts
+> - The OpenAPI spec defines the schema, so the LLM understands the response structure
+> - Authentication is configured once at the tool level
+> - No premium connector license required
 
 #### 7.4 Test
 
@@ -819,21 +801,20 @@ Consumption tier.
 - "How much is a car loan?"
 - "What's the mortgage rate?"
 
-4. For each, verify:
+3. For each, verify:
    - The agent calls the **Get Loan Rates** tool (you'll see it in the conversation trace)
    - The response includes rate information for the requested product
-   - If you configured adaptive cards, the [`loan-rates-card.json`](adaptive-cards/loan-rates-card.json) card renders
 
-> 💡 **To see the conversation trace:** In the test panel, look for a small info icon or
-> expandable section under each agent response. Click it to see which tool was called
-> and the raw input/output data.
+> 💡 **To see the conversation trace:** In the **Test your agent** panel, look for a small
+> info icon or expandable section under each agent response. Click it to see which tool
+> was called and the raw input/output data.
 
 #### Why This Matters
 
-Most enterprise agents need to call existing APIs — not just Dataverse. The HTTP
-connector pattern works with any REST endpoint: internal microservices, third-party
-APIs, or API Management facades. APIM adds rate limiting, caching, authentication
-policies, and monitoring without changing the backend.
+Most enterprise agents need to call existing APIs — not just Dataverse. The REST API
+tool pattern works with any endpoint that has an OpenAPI spec: internal microservices,
+third-party APIs, or API Management facades. APIM adds rate limiting, caching,
+authentication policies, and monitoring without changing the backend.
 
 ---
 
@@ -1115,7 +1096,7 @@ moved between environments (dev → test → production) in real projects.
 - [ ] Agent instructions written and tested
 - [ ] Knowledge source added with generative answers working
 - [ ] 4 Power Automate flows for Dataverse actions (List Accounts, Get Balance, Get Transactions, Get Profile)
-- [ ] 1 Power Automate flow calling external API via HTTP connector (Get Loan Rates via APIM)
+- [ ] 1 REST API tool calling external API directly (Get Loan Rates via APIM)
 - [ ] MCP server deployed and registered (Loan Payment Calculator)
 - [ ] All tools registered with LLM-optimized descriptions
 - [ ] Tool completion set to "Don't respond" (LLM generates natural responses from tool output)
@@ -1134,7 +1115,7 @@ moved between environments (dev → test → production) in real projects.
 | LLM doesn't call any tool | Check that orchestration is set to Generative mode; verify tools are published |
 | Agent ignores instructions | Instructions may be too long or contradictory; simplify and test incrementally |
 | Power Automate flow not appearing | Ensure the flow uses the "When an agent calls the flow" trigger and is in the same environment || Dataverse query returns no results | Check the OData filter syntax; verify data was imported to the correct environment |
-| HTTP connector returns 401/403 | Verify APIM subscription key is correct in the flow header |
+| REST API tool returns 401/403 | Verify APIM subscription key is correct in the tool's connection settings |
 | MCP tool not discovered | Check the MCP server endpoint is accessible; verify SSE transport is configured |
 | MCP tool called but returns error | Test the MCP server independently with the MCP Inspector |
 | Adaptive card not rendering | Validate JSON at [adaptivecards.io/designer](https://adaptivecards.io/designer/) |
@@ -1152,7 +1133,8 @@ moved between environments (dev → test → production) in real projects.
 | **Tool descriptions** | Tell the LLM *when* to use a tool and *what* it returns |
 | **Knowledge grounding** | Generative answers sourced from uploaded documents |
 | **Minimal topics** | Only welcome + fallback needed; the orchestrator handles the rest |
-| **HTTP connector** | Call any external REST API from Power Automate (APIM, microservices, third-party) |
+| **REST API tool** | Call any external REST API directly from Copilot Studio using an OpenAPI spec |
+| **HTTP connector** | Alternative: call REST APIs via Power Automate (requires premium license) |
 | **MCP tools** | Open standard for connecting agents to external tool servers with dynamic discovery |
 | **Adaptive cards** | Rich, structured UI for displaying data in chat |
 
@@ -1163,7 +1145,7 @@ This lab demonstrated three ways to give an agent capabilities:
 | Pattern | Example | When to Use |
 |---|---|---|
 | **Power Automate + Dataverse** | Account queries | Data lives in Power Platform / Dataverse |
-| **Power Automate + HTTP** | Loan rates via APIM | Calling existing REST APIs or external services |
+| **REST API tool** | Loan rates via APIM | Calling existing REST APIs with an OpenAPI spec — no Power Automate needed |
 | **MCP Tool** | Loan calculator | Reusable tool logic; cross-platform compatibility |
 
 ### Why This Approach Matters

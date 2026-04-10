@@ -1,0 +1,80 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Loan Rates API",
+    "description": "Returns current loan interest rates by product type. Use this API to retrieve rates for auto loans, personal loans, mortgages, and HELOC products.",
+    "version": "1.0.0"
+  },
+  "host": "REPLACE-WITH-YOUR-APIM-NAME.azure-api.net",
+  "basePath": "/loans",
+  "schemes": ["https"],
+  "securityDefinitions": {
+    "apiKey": {
+      "type": "apiKey",
+      "name": "Ocp-Apim-Subscription-Key",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/rates": {
+      "get": {
+        "operationId": "getLoanRates",
+        "summary": "Get current loan rates",
+        "description": "Returns current loan interest rates for all product types including auto loans, personal loans, mortgages, and HELOC. Use this when a customer asks about loan rates, interest rates, or financing options.",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful response with current loan rates",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "rates": {
+                  "type": "array",
+                  "description": "List of loan rate products with their current APR ranges",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "productType": {
+                        "type": "string",
+                        "description": "The type of loan product (e.g., Auto Loan - New, 30-Year Fixed Mortgage)"
+                      },
+                      "term": {
+                        "type": "string",
+                        "description": "The loan term length (e.g., 36 months, 360 months, Variable)"
+                      },
+                      "minRate": {
+                        "type": "number",
+                        "description": "The minimum APR offered for this product"
+                      },
+                      "maxRate": {
+                        "type": "number",
+                        "description": "The maximum APR offered for this product"
+                      },
+                      "asOfDate": {
+                        "type": "string",
+                        "description": "The date these rates are effective as of"
+                      }
+                    }
+                  }
+                },
+                "disclaimer": {
+                  "type": "string",
+                  "description": "Legal disclaimer about rate accuracy"
+                },
+                "lastUpdated": {
+                  "type": "string",
+                  "description": "Timestamp of when rates were last updated"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
