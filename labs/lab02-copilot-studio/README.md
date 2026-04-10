@@ -780,6 +780,10 @@ Before uploading it, you need to update the host to match your APIM instance:
 20. Review the summary of your configured REST API tool
 21. Click **Next** to publish the tool
 22. Once publishing completes, click **Create connection**
+
+    > ⏱️ After creating the connection, the tool may take **1–2 minutes** to appear in
+    > the tool list. If you don't see it immediately, **refresh the page** and check again.
+
 23. You'll be returned to the **Add tool** screen — find your newly created tool
     under the **REST API** section
 24. Click on it and enter your **APIM subscription key** when prompted to create the connection

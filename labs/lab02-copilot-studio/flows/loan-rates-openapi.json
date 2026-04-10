@@ -5,7 +5,7 @@
     "description": "Returns current loan interest rates by product type. Use this API to retrieve rates for auto loans, personal loans, mortgages, and HELOC products.",
     "version": "1.0.0"
   },
-  "host": "REPLACE-WITH-YOUR-APIM-NAME.azure-api.net",
+  "host": "bradapim2.azure-api.net",
   "basePath": "/loans",
   "schemes": ["https"],
   "securityDefinitions": {
