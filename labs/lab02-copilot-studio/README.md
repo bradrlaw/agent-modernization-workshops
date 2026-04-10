@@ -405,20 +405,28 @@ This flow returns all accounts belonging to a customer.
     > `cr_customerid`, `crf9a_customerid`, or similar. Check your table's column
     > names in Power Apps → Tables → Banking Accounts → Columns.
 
-**Add the response:**
+**Convert the result to a string:**
 
 18. Click **+ New step**
-19. Search for **Respond to the agent**
-20. Select **Respond to the agent**
-21. Click **+ Add an output** → **Text**
+19. Search for **Compose** and select **Compose** (under Data Operations)
+20. In the **Inputs** field, click it → select the **Expression** tab → enter:
+    `string(outputs('List_rows')?['body/value'])`
+21. Click **OK** to insert the expression
+
+    > 💡 The "Respond to the agent" action doesn't always accept complex expressions
+    > directly in its output fields. Using a Compose action first converts the data,
+    > then you reference the Compose output via Dynamic content.
+
+**Add the response:**
+
+22. Click **+ New step**
+23. Search for **Respond to the agent** and select it
+24. Click **+ Add an output** → **Text**
     - Name: `AccountList`
-    - Value: Click in the value field → select **Expression** tab → enter:
-      `string(outputs('List_rows')?['body/value'])`
+    - Value: Click in the value field → select the **Dynamic content** tab →
+      choose **Outputs** (from the Compose step)
 
-    > This returns the Dataverse rows as a JSON string. Alternatively, you can use
-    > a **Select** action between List rows and Respond to map specific fields.
-
-22. Click **Save** (top right)
+25. Click **Save** (top right)
 
 **Test the flow:**
 
@@ -456,18 +464,20 @@ This flow returns detailed balance info for a single account.
 
 **Add the response:**
 
-10. **+ New step** → **Respond to the agent**11. Add outputs for each field you want to return:
-    - **Text** output `AccountId` → Dynamic content: Account ID column
-    - **Text** output `AccountType` → Dynamic content: Account Type column
-    - **Text** output `Nickname` → Dynamic content: Nickname column
-    - **Text** output `CurrentBalance` → Dynamic content: Current Balance column
-    - **Text** output `AvailableBalance` → Dynamic content: Available Balance column
-    - **Text** output `Status` → Dynamic content: Status column
+10. **+ New step** → search **Compose** → select **Compose** (Data Operations)
+11. In **Inputs**, click → **Expression** tab → enter:
+    `string(outputs('Get_a_row_by_ID')?['body'])`
+    Click **OK**
 
-    > 💡 Alternatively, return the entire row as a JSON string using
-    > `string(outputs('Get_a_row_by_ID')?['body'])` in a single Text output.
+    > 💡 Alternatively, if you used **List rows** with a filter instead of Get a row by ID,
+    > the expression would be: `string(outputs('List_rows')?['body/value'])`
 
-12. **Save** → **Test** with `AccountId`: use the Dataverse GUID of ACCT-4521
+12. **+ New step** → **Respond to the agent**
+13. Click **+ Add an output** → **Text**
+    - Name: `AccountDetails`
+    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+
+14. **Save** → **Test** with `AccountId`: use the Dataverse GUID of ACCT-4521
     (or use the List rows approach with the text ID)
 
 ---
@@ -507,9 +517,15 @@ This flow returns recent transactions for a specific account with summary totals
 
 **Add the response:**
 
-8. **+ New step** → **Respond to the agent**9. Add a **Text** output `Transactions` with the expression:
+8. **+ New step** → search **Compose** → select **Compose** (Data Operations)
+9. In **Inputs**, click → **Expression** tab → enter:
    `string(outputs('List_rows')?['body/value'])`
-10. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
+   Click **OK**
+10. **+ New step** → **Respond to the agent**
+11. Click **+ Add an output** → **Text**
+    - Name: `Transactions`
+    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+12. **Save** → **Test** with `AccountId` for ACCT-4521 and `Count`: `5`
 
 ---
 
@@ -536,10 +552,15 @@ This flow returns the customer's profile information.
 
 **Add the response:**
 
-7. **+ New step** → **Respond to the agent**
-8. Add a **Text** output `Profile` with the expression:
+7. **+ New step** → search **Compose** → select **Compose** (Data Operations)
+8. In **Inputs**, click → **Expression** tab → enter:
    `string(outputs('List_rows')?['body/value'])`
-9. **Save** → **Test** with `CustomerId`: `CUST-1001`
+   Click **OK**
+9. **+ New step** → **Respond to the agent**
+10. Click **+ Add an output** → **Text**
+    - Name: `Profile`
+    - Value: Click → **Dynamic content** tab → select **Outputs** (from Compose)
+11. **Save** → **Test** with `CustomerId`: `CUST-1001`
 
 ---
 
@@ -783,19 +804,23 @@ Consumption tier.
 }
 ```
 
-**Return the result to Copilot:**
+**Return the result to the agent:**
 
 16. Click **+ New step**
-17. Search for `Respond to the agent` and select **Respond to the agent**
-18. Click **+ Add an output** → select **Text**
-19. In **Enter a title**, type: `LoanRatesJSON`
-20. In the **Enter a value to respond** field, click the field, switch to the **Expression** tab, and enter:
+17. Search for **Compose** and select **Compose** (Data Operations)
+18. In **Inputs**, click → **Expression** tab → enter:
     ```
     string(body('Parse_JSON'))
     ```
-21. Click **OK** to insert the expression
-22. Click **Save** (top-right)
-23. Click **Test** → **Manually** → **Run** to verify the flow executes successfully
+19. Click **OK** to insert the expression
+20. Click **+ New step**
+21. Search for `Respond to the agent` and select **Respond to the agent**
+22. Click **+ Add an output** → select **Text**
+23. In **Enter a title**, type: `LoanRatesJSON`
+24. In the **Enter a value to respond** field, click → **Dynamic content** tab →
+    select **Outputs** (from the Compose step)
+25. Click **Save** (top-right)
+26. Click **Test** → **Manually** → **Run** to verify the flow executes successfully
 
     > ⚠️ If the test fails with a 401 or 403 error, double-check your APIM subscription key.
     > If it fails with a connection error, ensure the APIM endpoint URL is correct.
