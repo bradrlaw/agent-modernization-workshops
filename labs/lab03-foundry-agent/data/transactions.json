@@ -1,0 +1,202 @@
+[
+  {
+    "transactionId": "TXN-90001",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-08T14:23:00Z",
+    "description": "Direct Deposit - Employer",
+    "amount": 2450.00,
+    "type": "Credit",
+    "category": "Income",
+    "runningBalance": 3842.56
+  },
+  {
+    "transactionId": "TXN-90002",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-07T09:15:00Z",
+    "description": "Grocery Mart",
+    "amount": -87.43,
+    "type": "Debit",
+    "category": "Groceries",
+    "runningBalance": 1392.56
+  },
+  {
+    "transactionId": "TXN-90003",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-06T16:42:00Z",
+    "description": "Electric Utility Co",
+    "amount": -142.30,
+    "type": "Debit",
+    "category": "Utilities",
+    "runningBalance": 1479.99
+  },
+  {
+    "transactionId": "TXN-90004",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-05T11:00:00Z",
+    "description": "ATM Withdrawal",
+    "amount": -200.00,
+    "type": "Debit",
+    "category": "Cash",
+    "runningBalance": 1622.29
+  },
+  {
+    "transactionId": "TXN-90005",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-04T08:30:00Z",
+    "description": "Transfer from Savings",
+    "amount": 500.00,
+    "type": "Credit",
+    "category": "Transfer",
+    "runningBalance": 1822.29
+  },
+  {
+    "transactionId": "TXN-90006",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-03T19:22:00Z",
+    "description": "Online Subscription Service",
+    "amount": -14.99,
+    "type": "Debit",
+    "category": "Entertainment",
+    "runningBalance": 1322.29
+  },
+  {
+    "transactionId": "TXN-90007",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-02T12:10:00Z",
+    "description": "Restaurant - Corner Bistro",
+    "amount": -45.67,
+    "type": "Debit",
+    "category": "Dining",
+    "runningBalance": 1337.28
+  },
+  {
+    "transactionId": "TXN-90008",
+    "accountId": "ACCT-4521",
+    "date": "2026-04-01T10:00:00Z",
+    "description": "Mortgage Payment",
+    "amount": -1850.00,
+    "type": "Debit",
+    "category": "Housing",
+    "runningBalance": 1382.95
+  },
+  {
+    "transactionId": "TXN-90009",
+    "accountId": "ACCT-4521",
+    "date": "2026-03-31T14:45:00Z",
+    "description": "Gas Station",
+    "amount": -52.18,
+    "type": "Debit",
+    "category": "Transportation",
+    "runningBalance": 3232.95
+  },
+  {
+    "transactionId": "TXN-90010",
+    "accountId": "ACCT-4521",
+    "date": "2026-03-30T08:00:00Z",
+    "description": "Payroll - Employer",
+    "amount": 2450.00,
+    "type": "Credit",
+    "category": "Income",
+    "runningBalance": 3285.13
+  },
+  {
+    "transactionId": "TXN-91001",
+    "accountId": "ACCT-7834",
+    "date": "2026-04-05T11:00:00Z",
+    "description": "Transfer to Checking",
+    "amount": -500.00,
+    "type": "Debit",
+    "category": "Transfer",
+    "runningBalance": 12500.00
+  },
+  {
+    "transactionId": "TXN-91002",
+    "accountId": "ACCT-7834",
+    "date": "2026-04-01T00:00:00Z",
+    "description": "Interest Payment",
+    "amount": 8.75,
+    "type": "Credit",
+    "category": "Interest",
+    "runningBalance": 13000.00
+  },
+  {
+    "transactionId": "TXN-91003",
+    "accountId": "ACCT-7834",
+    "date": "2026-03-15T09:00:00Z",
+    "description": "Automatic Savings Transfer",
+    "amount": 250.00,
+    "type": "Credit",
+    "category": "Transfer",
+    "runningBalance": 12991.25
+  },
+  {
+    "transactionId": "TXN-92001",
+    "accountId": "ACCT-6612",
+    "date": "2026-04-08T10:30:00Z",
+    "description": "Direct Deposit - Employer",
+    "amount": 1875.00,
+    "type": "Credit",
+    "category": "Income",
+    "runningBalance": 1523.89
+  },
+  {
+    "transactionId": "TXN-92002",
+    "accountId": "ACCT-6612",
+    "date": "2026-04-07T15:20:00Z",
+    "description": "Coffee Shop",
+    "amount": -6.75,
+    "type": "Debit",
+    "category": "Dining",
+    "runningBalance": -351.11
+  },
+  {
+    "transactionId": "TXN-92003",
+    "accountId": "ACCT-6612",
+    "date": "2026-04-06T09:00:00Z",
+    "description": "Rent Payment",
+    "amount": -1400.00,
+    "type": "Debit",
+    "category": "Housing",
+    "runningBalance": -344.36
+  },
+  {
+    "transactionId": "TXN-92004",
+    "accountId": "ACCT-6612",
+    "date": "2026-04-03T13:45:00Z",
+    "description": "Online Shopping",
+    "amount": -67.22,
+    "type": "Debit",
+    "category": "Shopping",
+    "runningBalance": 1055.64
+  },
+  {
+    "transactionId": "TXN-93001",
+    "accountId": "ACCT-3378",
+    "date": "2026-04-09T08:00:00Z",
+    "description": "Payroll Deposit",
+    "amount": 3200.00,
+    "type": "Credit",
+    "category": "Income",
+    "runningBalance": 8921.33
+  },
+  {
+    "transactionId": "TXN-93002",
+    "accountId": "ACCT-3378",
+    "date": "2026-04-07T14:00:00Z",
+    "description": "Auto Insurance",
+    "amount": -185.00,
+    "type": "Debit",
+    "category": "Insurance",
+    "runningBalance": 5721.33
+  },
+  {
+    "transactionId": "TXN-93003",
+    "accountId": "ACCT-3378",
+    "date": "2026-04-05T10:30:00Z",
+    "description": "Transfer to Savings",
+    "amount": -1000.00,
+    "type": "Debit",
+    "category": "Transfer",
+    "runningBalance": 5906.33
+  }
+]

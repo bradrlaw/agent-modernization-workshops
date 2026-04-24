@@ -1,0 +1,79 @@
+[
+  {
+    "accountId": "ACCT-4521",
+    "customerId": "CUST-1001",
+    "type": "Checking",
+    "nickname": "Primary Checking",
+    "last4": "4521",
+    "currentBalance": 3842.56,
+    "availableBalance": 3742.56,
+    "status": "Active",
+    "openedDate": "2018-03-15"
+  },
+  {
+    "accountId": "ACCT-7834",
+    "customerId": "CUST-1001",
+    "type": "Savings",
+    "nickname": "Emergency Fund",
+    "last4": "7834",
+    "currentBalance": 12500.00,
+    "availableBalance": 12500.00,
+    "status": "Active",
+    "openedDate": "2018-03-15"
+  },
+  {
+    "accountId": "ACCT-2190",
+    "customerId": "CUST-1001",
+    "type": "Certificate",
+    "nickname": "12-Month CD",
+    "last4": "2190",
+    "currentBalance": 5000.00,
+    "availableBalance": 0.00,
+    "status": "Active",
+    "openedDate": "2025-06-01"
+  },
+  {
+    "accountId": "ACCT-6612",
+    "customerId": "CUST-1002",
+    "type": "Checking",
+    "nickname": "Daily Checking",
+    "last4": "6612",
+    "currentBalance": 1523.89,
+    "availableBalance": 1523.89,
+    "status": "Active",
+    "openedDate": "2020-07-22"
+  },
+  {
+    "accountId": "ACCT-9945",
+    "customerId": "CUST-1002",
+    "type": "Savings",
+    "nickname": "Vacation Fund",
+    "last4": "9945",
+    "currentBalance": 4200.75,
+    "availableBalance": 4200.75,
+    "status": "Active",
+    "openedDate": "2020-08-10"
+  },
+  {
+    "accountId": "ACCT-3378",
+    "customerId": "CUST-1003",
+    "type": "Checking",
+    "nickname": "Main Account",
+    "last4": "3378",
+    "currentBalance": 8921.33,
+    "availableBalance": 8821.33,
+    "status": "Active",
+    "openedDate": "2022-01-10"
+  },
+  {
+    "accountId": "ACCT-5501",
+    "customerId": "CUST-1003",
+    "type": "Savings",
+    "nickname": "House Down Payment",
+    "last4": "5501",
+    "currentBalance": 35000.00,
+    "availableBalance": 35000.00,
+    "status": "Active",
+    "openedDate": "2022-02-01"
+  }
+]
