@@ -38,6 +38,11 @@ The agent becomes fully deterministic — no LLM is involved at any point.
 
 ### Additional Python dependency
 
+The `requests` package is already included in `src/requirements.txt`. If you
+completed the main lab's Step 2 (venv + `pip install -r src/requirements.txt`),
+you're all set. If not, from the `lab03-foundry-agent/` directory with your
+venv activated:
+
 ```bash
 pip install requests
 ```
