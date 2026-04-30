@@ -31,8 +31,9 @@ The agent becomes fully deterministic — no LLM is involved at any point.
 | Requirement | Details |
 |---|---|
 | Azure subscription | Same as main lab |
-| Azure AI Language resource | Standard (S) tier recommended |
-| CLU project | Trained and deployed (see setup below) |
+| Azure AI Foundry project | Same project from the LLM path (or new) |
+| Azure AI Language resource | Connected to Foundry project, or standalone (Standard S tier) |
+| CLU project | Trained and deployed (import file provided) |
 | Python 3.10+ | Same as main lab |
 
 ### Additional Python dependency
@@ -48,7 +49,29 @@ pip install requests
 
 ## Setup Steps
 
-### 1. Create an Azure AI Language Resource
+### 1. Add a Language Resource to Your Foundry Project
+
+CLU is part of Azure AI Language, which can be connected directly to your
+AI Foundry project as a "connected resource." This keeps everything under
+one project rather than managing separate services.
+
+> 💡 **Migration note:** Microsoft is migrating Language Studio into Foundry
+> (completing March 2027). You can already create and manage CLU projects
+> through Foundry or Language Studio — both use the same underlying endpoint.
+
+#### Option A: Connect via AI Foundry (Recommended)
+
+1. Open your **AI Foundry project** at [ai.azure.com](https://ai.azure.com)
+2. Go to **Management** → **Connected resources**
+3. Click **+ New connection** → select **Azure AI Language**
+4. Either create a new Language resource or connect an existing one:
+   - **Region**: Same region as your Foundry project
+   - **Pricing tier**: Standard S (Free F0 works for testing)
+5. Once connected, the Language resource endpoint is available to your project
+
+#### Option B: Create a Standalone Language Resource
+
+If you prefer to keep it separate:
 
 1. Go to the [Azure Portal](https://portal.azure.com)
 2. Click **+ Create a resource** → search for "Language"
@@ -65,13 +88,24 @@ pip install requests
 
 ### 2. Create and Train the CLU Project
 
+You can create the CLU project through either **AI Foundry** or **Language Studio**
+(both manage the same underlying resource).
+
 #### Option A: Import the Pre-Built Project (Recommended)
 
+**Via AI Foundry:**
+1. Open your AI Foundry project → go to **Language** → **Conversational Language Understanding**
+2. Click **+ Create new project** → **Import**
+3. Upload the file: `clu/banking-assistant-clu.json`
+
+**Via Language Studio (alternative):**
 1. Open [Language Studio](https://language.cognitive.azure.com)
 2. Sign in and select your Language resource
 3. Go to **Conversational Language Understanding**
 4. Click **+ Create new project** → **Import**
 5. Upload the file: `clu/banking-assistant-clu.json`
+
+**After import (either path):**
 6. This imports:
    - 7 intents (+ None) with sample utterances
    - 7 entity types with labeled examples
