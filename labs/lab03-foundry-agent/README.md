@@ -183,6 +183,18 @@ lab03-foundry-agent/
    source .venv/bin/activate
    ```
 
+   > ⚠️ **Important:** You must activate the virtual environment before running
+   > any lab scripts. If you see `ModuleNotFoundError: No module named 'azure'`,
+   > it means you're using the system Python instead of the venv.
+   >
+   > **Windows troubleshooting:** If activation fails with an execution policy
+   > error, run: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force`
+   >
+   > **Alternative:** You can skip activation and call the venv Python directly:
+   > ```
+   > .venv\Scripts\python.exe src/chat_console.py
+   > ```
+
 3. Install dependencies:
 
    ```bash
@@ -367,6 +379,8 @@ This is where it all comes together. The console client:
 4. Maintains full conversation history across turns
 
 #### 5.1 Start the Chat
+
+> Make sure your virtual environment is activated (see Step 2).
 
 ```bash
 cd src
