@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Banking Assistant</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: #f3f5f7; color: #1f2937; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: linear-gradient(135deg, #0f6cbd, #125ea7); color: white; padding: 18px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        header h1 { margin: 0; font-size: 20px; }
+        header p { margin: 6px 0 0; opacity: 0.9; font-size: 13px; }
+        .toolbar { display: flex; gap: 12px; align-items: center; padding: 14px 24px; background: white; border-bottom: 1px solid #e5e7eb; }
+        .toolbar label { font-weight: 600; font-size: 14px; }
+        .toolbar select { min-width: 260px; padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 14px; }
+        .chat-shell { flex: 1; display: flex; flex-direction: column; max-width: 980px; width: 100%; margin: 0 auto; padding: 24px; gap: 16px; }
+        .messages { flex: 1; background: white; border: 1px solid #e5e7eb; border-radius: 18px; padding: 20px; overflow-y: auto; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05); }
+        .message { max-width: 78%; padding: 12px 14px; border-radius: 16px; margin-bottom: 12px; white-space: pre-wrap; line-height: 1.45; }
+        .message.user { margin-left: auto; background: #0f6cbd; color: white; border-bottom-right-radius: 6px; }
+        .message.assistant { background: #f8fafc; border: 1px solid #e5e7eb; border-bottom-left-radius: 6px; }
+        .message.system { max-width: 100%; background: #eef6ff; border: 1px dashed #93c5fd; color: #1d4ed8; }
+        .composer { display: flex; gap: 12px; }
+        .composer input { flex: 1; padding: 14px 16px; border-radius: 14px; border: 1px solid #cbd5e1; font-size: 14px; }
+        .composer input:focus { outline: none; border-color: #0f6cbd; box-shadow: 0 0 0 3px rgba(15,108,189,0.15); }
+        .composer button { border: none; border-radius: 14px; background: #0f6cbd; color: white; padding: 0 24px; font-weight: 600; cursor: pointer; }
+        .composer button:disabled { background: #94a3b8; cursor: not-allowed; }
+        .typing { font-size: 13px; color: #64748b; margin-top: 4px; }
+        @media (max-width: 700px) {
+            .toolbar, .chat-shell { padding: 16px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar select { min-width: 0; width: 100%; }
+            .message { max-width: 100%; }
+            .composer { flex-direction: column; }
+            .composer button { height: 46px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Virtual Banking Assistant</h1>
+        <p>Demo banking copilot powered by .NET 8 tool calling</p>
+    </header>
+
+    <div class="toolbar">
+        <label for="customerSelect">Customer</label>
+        <select id="customerSelect"></select>
+    </div>
+
+    <div class="chat-shell">
+        <div class="messages" id="messages">
+            <div class="message system">Select a customer and ask about balances, transactions, profile details, loan rates, payment estimates, or banking FAQs.</div>
+        </div>
+        <div class="typing" id="typing"></div>
+        <div class="composer">
+            <input id="messageInput" type="text" placeholder="Type a message..." autocomplete="off" />
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const customerSelect = document.getElementById('customerSelect');
+        const messagesEl = document.getElementById('messages');
+        const typingEl = document.getElementById('typing');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        let history = [];
+
+        async function loadCustomers() {
+            const response = await fetch('/api/customers');
+            const customers = await response.json();
+            customerSelect.innerHTML = '';
+            for (const customer of customers) {
+                const option = document.createElement('option');
+                option.value = customer.customerId;
+                option.textContent = `${customer.name} (${customer.customerId})`;
+                customerSelect.appendChild(option);
+            }
+        }
+
+        function addMessage(role, text) {
+            const element = document.createElement('div');
+            element.className = `message ${role}`;
+            element.textContent = text;
+            messagesEl.appendChild(element);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function resetConversation() {
+            history = [];
+            messagesEl.innerHTML = '';
+            addMessage('system', 'Customer changed. Start a new conversation.');
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) {
+                return;
+            }
+
+            addMessage('user', message);
+            const requestHistory = history.slice();
+            history.push({ role: 'user', content: message });
+            messageInput.value = '';
+            sendButton.disabled = true;
+            typingEl.textContent = 'Assistant is thinking...';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message,
+                        customerId: customerSelect.value,
+                        history: requestHistory
+                    })
+                });
+
+                const payload = await response.json();
+                if (!response.ok || payload.error) {
+                    const errorText = payload.error || 'Request failed.';
+                    addMessage('system', `Error: ${errorText}`);
+                    history.pop();
+                } else {
+                    addMessage('assistant', payload.response);
+                    history.push({ role: 'assistant', content: payload.response });
+                }
+            } catch (error) {
+                addMessage('system', `Network error: ${error.message}`);
+                history.pop();
+            } finally {
+                typingEl.textContent = '';
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !sendButton.disabled) {
+                sendMessage();
+            }
+        });
+        customerSelect.addEventListener('change', resetConversation);
+
+        loadCustomers().catch(error => addMessage('system', `Unable to load customers: ${error.message}`));
+    </script>
+</body>
+</html>

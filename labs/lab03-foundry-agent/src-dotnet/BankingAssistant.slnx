@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BankingAssistant.Clu/BankingAssistant.Clu.csproj" />
+  <Project Path="BankingAssistant.Console/BankingAssistant.Console.csproj" />
+  <Project Path="BankingAssistant.Shared/BankingAssistant.Shared.csproj" />
+  <Project Path="BankingAssistant.Web/BankingAssistant.Web.csproj" />
+</Solution>
