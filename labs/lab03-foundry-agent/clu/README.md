@@ -67,12 +67,15 @@ one project rather than managing separate services.
 #### Option A: Connect via AI Foundry (Recommended)
 
 1. Open your **AI Foundry project** at [ai.azure.com](https://ai.azure.com)
-2. Go to **Management** → **Connected resources**
-3. Click **+ New connection** → select **Azure AI Language**
-4. Either create a new Language resource or connect an existing one:
+2. In the left sidebar, click **Management center**
+3. Under the "Project" section, click **Connected resources**
+4. Click **+ New connection** → select **Azure AI Language**
+5. Either create a new Language resource or connect an existing one:
    - **Region**: Same region as your Foundry project
    - **Pricing tier**: Standard S (Free F0 works for testing)
-5. Once connected, the Language resource endpoint is available to your project
+6. Once connected, the Language resource endpoint is available to your project
+
+> 💡 You need **Contributor** or **Owner** role on the subscription to add connections.
 
 #### Option B: Create a Standalone Language Resource
 
