@@ -19,6 +19,7 @@ from tools import (
     get_customer_profile,
     get_loan_rates,
     calculate_loan_payment,
+    search_faq,
 )
 
 # Agent system instructions — matches Lab 02 persona
@@ -131,6 +132,20 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_faq",
+            "description": "Searches the banking FAQ knowledge base for answers to common questions about hours, policies, limits, cards, direct deposit, and disputes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The user's question or search keywords"},
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 # Map function names to callables
@@ -141,6 +156,7 @@ TOOL_DISPATCH = {
     "get_customer_profile": get_customer_profile,
     "get_loan_rates": get_loan_rates,
     "calculate_loan_payment": calculate_loan_payment,
+    "search_faq": search_faq,
 }
 
 

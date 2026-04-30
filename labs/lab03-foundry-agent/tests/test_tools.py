@@ -18,6 +18,7 @@ from tools import (
     get_customer_profile,
     get_loan_rates,
     calculate_loan_payment,
+    search_faq,
 )
 
 
@@ -125,3 +126,24 @@ class TestCalculateLoanPayment:
         assert "error" in result
         result = json.loads(calculate_loan_payment(10000, -1, 60))
         assert "error" in result
+
+
+class TestSearchFaq:
+    def test_finds_branch_hours(self):
+        result = json.loads(search_faq("branch hours"))
+        assert "faq_results" in result
+        assert any("branch" in r["question"].lower() for r in result["faq_results"])
+
+    def test_finds_lost_card(self):
+        result = json.loads(search_faq("lost stolen card"))
+        assert "faq_results" in result
+        assert any("lost" in r["question"].lower() for r in result["faq_results"])
+
+    def test_finds_atm_limit(self):
+        result = json.loads(search_faq("ATM withdrawal limit"))
+        assert "faq_results" in result
+        assert any("ATM" in r["question"] for r in result["faq_results"])
+
+    def test_no_match_returns_message(self):
+        result = json.loads(search_faq("cryptocurrency"))
+        assert "message" in result

@@ -214,3 +214,40 @@ def calculate_loan_payment(
         "annualRate": annual_rate,
         "termMonths": term_months,
     }, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Tool 7: Search FAQ / Knowledge Base
+# ---------------------------------------------------------------------------
+
+# Load FAQ at module level
+_FAQ_PATH = _DATA_DIR / "banking-faq.txt"
+_FAQ_ENTRIES = []
+if _FAQ_PATH.exists():
+    with open(_FAQ_PATH, "r") as f:
+        content = f.read().strip()
+    # Parse Q&A pairs (question on one line, answer on next)
+    lines = [l.strip() for l in content.split("\n") if l.strip()]
+    for i in range(0, len(lines) - 1, 2):
+        _FAQ_ENTRIES.append({"question": lines[i], "answer": lines[i + 1]})
+
+
+def search_faq(query: str) -> str:
+    """
+    Searches the banking FAQ knowledge base for answers to common questions.
+    Use this for general banking questions about hours, policies, limits, etc.
+
+    :param query: The user's question or search keywords.
+    :return: JSON string with matching FAQ entries.
+    """
+    query_lower = query.lower()
+    matches = []
+    for entry in _FAQ_ENTRIES:
+        if any(word in entry["question"].lower() or word in entry["answer"].lower()
+               for word in query_lower.split() if len(word) > 2):
+            matches.append(entry)
+
+    if not matches:
+        return json.dumps({"message": "No FAQ entries found matching your query. Please contact support at 1-800-555-0199."})
+
+    return json.dumps({"faq_results": matches}, indent=2)
