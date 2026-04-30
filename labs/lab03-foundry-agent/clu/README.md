@@ -54,41 +54,16 @@ pip install requests
 
 ## Setup Steps
 
-### 1. Add a Language Resource to Your Foundry Project
+### 1. Create an Azure AI Language Resource
 
-CLU is part of Azure AI Language, which can be connected directly to your
-AI Foundry project as a "connected resource." This keeps everything under
-one project rather than managing separate services.
+CLU is part of Azure AI Language. You'll create a Language resource and
+reference it directly from your code via endpoint + key in your `.env` file.
 
 > 💡 **Migration note:** Microsoft is migrating Language Studio into Foundry
 > (completing March 2027). You can already create and manage CLU projects
 > through Foundry or Language Studio — both use the same underlying endpoint.
 
-#### Option A: Connect via AI Foundry (Recommended)
-
-> ⚠️ **Important:** The "Azure Language" connection type only appears in Foundry
-> if you already have a Language resource deployed in your subscription. If you
-> don't see it in the list, **create the Language resource first** using Option B
-> below, then come back to connect it here.
-
-1. Open your **AI Foundry project** at [ai.azure.com](https://ai.azure.com)
-2. In the left sidebar, click **Management center**
-3. Under the "Project" section, click **Connected resources**
-4. Click **+ New connection**
-5. In the connection type list, look for **"Azure Language"** (not "Azure AI Language")
-   - If you don't see it, you can also try **"Custom keys"** and manually enter
-     your Language resource endpoint and key
-   - Or create the resource first via Option B, then return here
-6. Select your existing Language resource:
-   - **Region**: Same region as your Foundry project
-   - **Pricing tier**: Standard S (Free F0 works for testing)
-7. Click **Add connection** — the Language resource endpoint is now available to your project
-
-> 💡 You need **Contributor** or **Owner** role on the subscription to add connections.
-
-#### Option B: Create a Standalone Language Resource
-
-If you prefer to keep it separate:
+#### Create the Language Resource
 
 1. Go to the [Azure Portal](https://portal.azure.com)
 2. Click **+ Create a resource** → search for "Language"
@@ -101,7 +76,23 @@ If you prefer to keep it separate:
 5. Click **Review + Create** → **Create**
 6. After deployment, go to the resource and copy:
    - **Endpoint** (e.g., `https://banking-assistant-language.cognitiveservices.azure.com`)
-   - **Key** (under Keys and Endpoint)
+   - **Key** (under **Keys and Endpoint** in the left menu)
+
+#### (Optional) Register as Connected Resource in Foundry
+
+If you want the Language resource visible in your Foundry project for
+management purposes:
+
+1. Open your **AI Foundry project** at [ai.azure.com](https://ai.azure.com)
+2. Go to **Management center** → **Connected resources** → **+ New connection**
+3. Select **"Custom key"** (Azure Language is not listed as a dedicated type)
+4. Fill in:
+   - **Connection name**: e.g., `banking-assistant-language`
+   - Add a custom key with your Language resource key
+   - Add a property for the endpoint URL
+
+> ⚠️ This step is optional — the CLU code reads credentials directly from your
+> `.env` file, not from Foundry connections. This is purely for visibility.
 
 ### 2. Create and Train the CLU Project
 
