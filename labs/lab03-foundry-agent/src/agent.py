@@ -213,6 +213,7 @@ def chat_completion(openai_client, model: str, messages: list) -> str:
             messages=messages,
             tools=TOOL_DEFINITIONS,
             tool_choice="auto",
+            timeout=120,
         )
 
         choice = response.choices[0]
