@@ -1,0 +1,295 @@
+{
+  "projectFileVersion": "2022-10-01-preview",
+  "stringIndexType": "Utf16CodeUnit",
+  "metadata": {
+    "projectKind": "Conversation",
+    "projectName": "banking-assistant",
+    "multilingual": false,
+    "description": "Virtual Banking Assistant - Intent detection for 7 banking capabilities",
+    "language": "en-us"
+  },
+  "assets": {
+    "projectKind": "Conversation",
+    "intents": [
+      { "category": "GetAccountBalance" },
+      { "category": "GetRecentTransactions" },
+      { "category": "ListAccounts" },
+      { "category": "GetCustomerProfile" },
+      { "category": "GetLoanRates" },
+      { "category": "CalculateLoanPayment" },
+      { "category": "SearchFAQ" },
+      { "category": "None" }
+    ],
+    "entities": [
+      { "category": "AccountType", "compositionSetting": "combineComponents" },
+      { "category": "AccountReference", "compositionSetting": "combineComponents" },
+      { "category": "ProductType", "compositionSetting": "combineComponents" },
+      { "category": "LoanAmount", "compositionSetting": "combineComponents" },
+      { "category": "InterestRate", "compositionSetting": "combineComponents" },
+      { "category": "LoanTerm", "compositionSetting": "combineComponents" },
+      { "category": "TransactionLimit", "compositionSetting": "combineComponents" }
+    ],
+    "utterances": [
+      {
+        "text": "What is my account balance?",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Show me my checking account balance",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": [{ "category": "AccountType", "offset": 11, "length": 8 }]
+      },
+      {
+        "text": "How much money is in my savings?",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": [{ "category": "AccountType", "offset": 24, "length": 7 }]
+      },
+      {
+        "text": "What's the balance on my account ending in 4521?",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": [{ "category": "AccountReference", "offset": 44, "length": 4 }]
+      },
+      {
+        "text": "Check my balance",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "How much do I have in my accounts?",
+        "intent": "GetAccountBalance",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Show me my recent transactions",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What are my last 5 transactions?",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": [{ "category": "TransactionLimit", "offset": 16, "length": 1 }]
+      },
+      {
+        "text": "Show me transactions on my checking account",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": [{ "category": "AccountType", "offset": 27, "length": 8 }]
+      },
+      {
+        "text": "What have I spent recently?",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Show my last 10 transactions",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": [{ "category": "TransactionLimit", "offset": 12, "length": 2 }]
+      },
+      {
+        "text": "Recent activity on my savings",
+        "intent": "GetRecentTransactions",
+        "language": "en-us",
+        "entities": [{ "category": "AccountType", "offset": 22, "length": 7 }]
+      },
+      {
+        "text": "What accounts do I have?",
+        "intent": "ListAccounts",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "List all my accounts",
+        "intent": "ListAccounts",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Show me a summary of my accounts",
+        "intent": "ListAccounts",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "How many accounts do I have?",
+        "intent": "ListAccounts",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Give me an overview of all my accounts",
+        "intent": "ListAccounts",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What's my profile information?",
+        "intent": "GetCustomerProfile",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What address do you have on file for me?",
+        "intent": "GetCustomerProfile",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Show me my contact information",
+        "intent": "GetCustomerProfile",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What email do you have for me?",
+        "intent": "GetCustomerProfile",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What is my phone number on file?",
+        "intent": "GetCustomerProfile",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What are your current loan rates?",
+        "intent": "GetLoanRates",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What are the auto loan rates?",
+        "intent": "GetLoanRates",
+        "language": "en-us",
+        "entities": [{ "category": "ProductType", "offset": 13, "length": 4 }]
+      },
+      {
+        "text": "Show me home loan rates",
+        "intent": "GetLoanRates",
+        "language": "en-us",
+        "entities": [{ "category": "ProductType", "offset": 8, "length": 4 }]
+      },
+      {
+        "text": "What interest rates do you offer for personal loans?",
+        "intent": "GetLoanRates",
+        "language": "en-us",
+        "entities": [{ "category": "ProductType", "offset": 36, "length": 8 }]
+      },
+      {
+        "text": "Current mortgage rates",
+        "intent": "GetLoanRates",
+        "language": "en-us",
+        "entities": [{ "category": "ProductType", "offset": 8, "length": 8 }]
+      },
+      {
+        "text": "What would my monthly payment be on a $25,000 loan at 4.99% for 60 months?",
+        "intent": "CalculateLoanPayment",
+        "language": "en-us",
+        "entities": [
+          { "category": "LoanAmount", "offset": 38, "length": 7 },
+          { "category": "InterestRate", "offset": 53, "length": 5 },
+          { "category": "LoanTerm", "offset": 63, "length": 9 }
+        ]
+      },
+      {
+        "text": "Calculate a payment for a $30,000 car loan at 5.25% over 48 months",
+        "intent": "CalculateLoanPayment",
+        "language": "en-us",
+        "entities": [
+          { "category": "LoanAmount", "offset": 26, "length": 7 },
+          { "category": "InterestRate", "offset": 46, "length": 5 },
+          { "category": "LoanTerm", "offset": 57, "length": 9 }
+        ]
+      },
+      {
+        "text": "How much would a $200,000 mortgage cost monthly at 6.25% for 30 years?",
+        "intent": "CalculateLoanPayment",
+        "language": "en-us",
+        "entities": [
+          { "category": "LoanAmount", "offset": 17, "length": 8 },
+          { "category": "InterestRate", "offset": 51, "length": 5 },
+          { "category": "LoanTerm", "offset": 61, "length": 8 }
+        ]
+      },
+      {
+        "text": "Estimate payments on a $15,000 personal loan",
+        "intent": "CalculateLoanPayment",
+        "language": "en-us",
+        "entities": [
+          { "category": "LoanAmount", "offset": 23, "length": 7 }
+        ]
+      },
+      {
+        "text": "What are your branch hours?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "How do I report a lost card?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What is my ATM withdrawal limit?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "How do I set up direct deposit?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "How do I dispute a charge?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "When are you open on Saturdays?",
+        "intent": "SearchFAQ",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Hello",
+        "intent": "None",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Thank you",
+        "intent": "None",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "What's the weather like?",
+        "intent": "None",
+        "language": "en-us",
+        "entities": []
+      },
+      {
+        "text": "Tell me a joke",
+        "intent": "None",
+        "language": "en-us",
+        "entities": []
+      }
+    ]
+  }
+}

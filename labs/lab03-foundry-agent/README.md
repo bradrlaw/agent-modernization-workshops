@@ -87,11 +87,16 @@ lab03-foundry-agent/
 ├── README.md                     # This file — full walkthrough
 ├── src/
 │   ├── agent.py                  # Agent config, tool schemas, chat loop
-│   ├── tools.py                  # 6 function tool implementations
-│   ├── chat_console.py           # Interactive console chat client
+│   ├── tools.py                  # 7 function tool implementations
+│   ├── chat_console.py           # Interactive console chat client (LLM path)
+│   ├── chat_console_clu.py       # Console client using CLU (no LLM path)
+│   ├── clu_client.py             # CLU REST API client + entity resolution
 │   ├── chat_web.py               # Flask web UI (stretch goal)
 │   ├── requirements.txt          # Python dependencies
 │   └── .env.example              # Environment variable template
+├── clu/
+│   ├── README.md                 # CLU alternate path guide
+│   └── banking-assistant-clu.json # Importable CLU project definition
 ├── data/
 │   ├── customers.json            # 3 demo customer profiles
 │   ├── accounts.json             # 7 accounts across customers
@@ -107,6 +112,10 @@ lab03-foundry-agent/
 └── tests/
     └── test_tools.py             # Unit tests for function tools
 ```
+
+> 🔀 **CLU Alternate Path:** If your organization restricts LLM usage, see
+> [`clu/README.md`](clu/README.md) for a deterministic approach using Azure AI
+> Language CLU for intent detection — no GPT model required.
 
 ---
 
