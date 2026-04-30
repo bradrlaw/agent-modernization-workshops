@@ -161,6 +161,10 @@ CLU_DEPLOYMENT_NAME=production
 
 ## Running the CLU Console
 
+> **Prerequisite:** Complete Step 2 from the main [README](../README.md) first —
+> create and activate the Python virtual environment and install dependencies.
+> The CLU path uses the same venv and `requirements.txt` as the LLM path.
+
 ```bash
 cd src
 python chat_console_clu.py
