@@ -89,7 +89,18 @@ public static class AppSupport
             credential = new AzureCliCredential();
         }
 
-        var client = new AzureOpenAIClient(new Uri(settings.Endpoint), credential);
+        // The PROJECT_ENDPOINT from Foundry is like:
+        //   https://resource.services.ai.azure.com/api/projects/project-name
+        // AzureOpenAIClient needs just the base:
+        //   https://resource.services.ai.azure.com
+        var endpoint = settings.Endpoint;
+        var apiIndex = endpoint.IndexOf("/api/", StringComparison.OrdinalIgnoreCase);
+        if (apiIndex > 0)
+        {
+            endpoint = endpoint[..apiIndex];
+        }
+
+        var client = new AzureOpenAIClient(new Uri(endpoint), credential);
         return client.GetChatClient(settings.DeploymentName);
     }
 

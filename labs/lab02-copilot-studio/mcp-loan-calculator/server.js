@@ -3,6 +3,19 @@ import { randomUUID } from "crypto";
 
 const app = express();
 app.use(express.json());
+
+// CORS — allow Copilot Studio and other MCP clients to connect
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Mcp-Session-Id");
+  res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Loan payment calculation
@@ -58,17 +71,7 @@ app.post("/mcp", (req, res) => {
     return res.status(202).end();
   }
 
-  // All other requests need a valid session
-  if (!sessionId || !sessions.has(sessionId)) {
-    console.log(`  → session not found: ${sessionId}`);
-    return res.status(400).json({
-      jsonrpc: "2.0",
-      id: msg.id,
-      error: { code: -32000, message: "Bad Request: Server not initialized" },
-    });
-  }
-
-  // Handle tools/list
+  // Handle tools/list — allow without session for Copilot Studio discovery
   if (msg.method === "tools/list") {
     const response = {
       jsonrpc: "2.0",
@@ -107,6 +110,16 @@ app.post("/mcp", (req, res) => {
     return res.json(response);
   }
 
+  // All other requests need a valid session
+  if (!sessionId || !sessions.has(sessionId)) {
+    console.log(`  → session not found: ${sessionId}`);
+    return res.status(400).json({
+      jsonrpc: "2.0",
+      id: msg.id,
+      error: { code: -32000, message: "Bad Request: Server not initialized" },
+    });
+  }
+
   // Handle tools/call
   if (msg.method === "tools/call") {
     const { name, arguments: args } = msg.params;
@@ -136,6 +149,36 @@ app.post("/mcp", (req, res) => {
     id: msg.id,
     error: { code: -32601, message: `Method not found: ${msg.method}` },
   });
+});
+
+app.get("/mcp", (req, res) => {
+  console.log(`\nGET /mcp — SSE stream requested`);
+  // Per MCP spec: return 405 if we don't offer a server-initiated SSE stream
+  // Copilot Studio uses this to verify the endpoint is alive
+  const accept = req.headers["accept"] || "";
+  if (accept.includes("text/event-stream")) {
+    // Open an SSE stream (keep-alive, no messages for now)
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.write(":\n\n"); // SSE comment as keep-alive
+    // Close after 30s if no activity
+    const timeout = setTimeout(() => res.end(), 30000);
+    req.on("close", () => clearTimeout(timeout));
+  } else {
+    res.status(405).json({ error: "Method Not Allowed. Use POST for JSON-RPC messages." });
+  }
+});
+
+app.delete("/mcp", (req, res) => {
+  const sessionId = req.headers["mcp-session-id"];
+  console.log(`\nDELETE /mcp — session termination: ${sessionId || "(none)"}`);
+  if (sessionId && sessions.has(sessionId)) {
+    sessions.delete(sessionId);
+    res.status(200).json({ status: "session terminated" });
+  } else {
+    res.status(404).json({ error: "Session not found" });
+  }
 });
 
 app.get("/health", (req, res) => {
