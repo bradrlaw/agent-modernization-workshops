@@ -1,5 +1,10 @@
 import express from "express";
 import { randomUUID } from "crypto";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(express.json());
@@ -183,6 +188,27 @@ app.delete("/mcp", (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", server: "loan-calculator", version: "1.0.0" });
+});
+
+// REST endpoint (non-MCP) — for Power Platform custom connector compatibility
+app.post("/calculate", (req, res) => {
+  const { principal, annualRate, termMonths } = req.body;
+  console.log(`\nPOST /calculate — principal: ${principal}, rate: ${annualRate}, term: ${termMonths}`);
+
+  if (!principal || !annualRate || !termMonths) {
+    return res.status(400).json({ error: "Missing required fields: principal, annualRate, termMonths" });
+  }
+  if (principal <= 0 || annualRate <= 0 || termMonths <= 0) {
+    return res.status(400).json({ error: "All values must be positive numbers" });
+  }
+
+  const result = calculateLoan(principal, annualRate, termMonths);
+  res.json(result);
+});
+
+// Serve Swagger spec for custom connector import
+app.get("/swagger.json", (req, res) => {
+  res.sendFile(join(__dirname, "swagger.json"));
 });
 
 app.listen(PORT, () => {
