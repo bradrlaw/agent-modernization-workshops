@@ -1031,6 +1031,23 @@ MCP is an emerging open standard that enables:
 - **Separation of concerns** — Tool logic lives in the MCP server, not in the agent platform
 - **Ecosystem growth** — As more tools become MCP-compatible, agents gain capabilities automatically
 
+#### 8.5 Alternative: Power Platform Custom Connector
+
+If you need to **export your agent as a solution** with environment variables for the
+MCP server URL, or if the native MCP option is unavailable, you can use the loan
+calculator as a standard **Power Platform custom connector** instead:
+
+1. With the MCP server and dev tunnel running, go to **Power Platform** →
+   **Custom Connectors** → **+ New** → **Import from URL**
+2. Enter: `https://<your-tunnel-url>/swagger.json`
+3. Update the **Host** field to your tunnel hostname (without `https://`)
+4. Test the connector using the `CalculateLoanPayment` action
+5. Save and create a connection
+6. Back in Copilot Studio, add the custom connector as a tool instead of the MCP connection
+
+> 📖 See [`mcp-loan-calculator/README.md`](mcp-loan-calculator/README.md) for full
+> details on both the MCP and custom connector integration paths.
+
 ---
 
 ### Step 9: Test the Complete Agent
