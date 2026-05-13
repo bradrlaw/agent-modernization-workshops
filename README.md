@@ -10,7 +10,7 @@ current agent platform: **Copilot Studio**, **Azure AI Foundry**, and the
 
 | | |
 |---|---|
-| **Format** | 8 bi-weekly workshops (90–120 min) + paired hands-on labs |
+| **Format** | 8 workshops (90–120 min) + paired hands-on labs |
 | **Audience** | Developers, architects, platform engineers, security & governance teams |
 | **Outcome** | Working agents, approved environments, and a repeatable modernization playbook |
 
