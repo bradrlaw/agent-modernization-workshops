@@ -1,0 +1,13 @@
+{
+  "name": "mcp-loan-calculator-auth",
+  "version": "1.0.0",
+  "description": "MCP server with API Key authentication — loan payment calculator for Copilot Studio",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

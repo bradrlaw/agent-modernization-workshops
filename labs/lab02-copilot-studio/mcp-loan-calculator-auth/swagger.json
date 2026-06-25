@@ -1,0 +1,216 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Loan Payment Calculator (Authenticated)",
+    "description": "MCP Loan Payment Calculator Server with API Key authentication. Calculates monthly payment, total interest, and total cost for a loan.",
+    "version": "1.0.0"
+  },
+  "host": "REPLACE_WITH_YOUR_HOST",
+  "basePath": "/",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "x-api-key",
+      "in": "header",
+      "description": "API Key for authenticating requests"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "operationId": "McpRequest",
+        "summary": "Send a JSON-RPC message to the MCP server",
+        "description": "Handles MCP protocol messages including initialize, tools/list, and tools/call.",
+        "parameters": [
+          {
+            "name": "Mcp-Session-Id",
+            "in": "header",
+            "type": "string",
+            "required": false,
+            "description": "Session ID returned from initialize call"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/JsonRpcRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response",
+            "schema": {
+              "$ref": "#/definitions/JsonRpcResponse"
+            },
+            "headers": {
+              "Mcp-Session-Id": {
+                "type": "string",
+                "description": "Session ID for subsequent requests"
+              }
+            }
+          },
+          "202": {
+            "description": "Notification accepted (no body)"
+          },
+          "401": {
+            "description": "Unauthorized — missing or invalid API key"
+          }
+        }
+      }
+    },
+    "/calculate": {
+      "post": {
+        "operationId": "CalculateLoanPayment",
+        "summary": "Calculate loan payment",
+        "description": "Calculates the monthly payment, total interest, and total cost for a loan given the principal amount, annual interest rate, and term in months.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LoanRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Loan calculation result",
+            "schema": {
+              "$ref": "#/definitions/LoanResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized — missing or invalid API key"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthCheck",
+        "summary": "Health check (no auth required)",
+        "description": "Returns server status. Does not require authentication.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "schema": {
+              "$ref": "#/definitions/HealthResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "JsonRpcRequest": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string",
+          "default": "2.0"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "type": "string",
+          "description": "MCP method: initialize, tools/list, tools/call"
+        },
+        "params": {
+          "type": "object"
+        }
+      },
+      "required": ["jsonrpc", "method"]
+    },
+    "JsonRpcResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "type": "object"
+        },
+        "error": {
+          "type": "object"
+        }
+      }
+    },
+    "LoanRequest": {
+      "type": "object",
+      "required": ["principal", "annualRate", "termMonths"],
+      "properties": {
+        "principal": {
+          "type": "number",
+          "description": "Loan amount in dollars (e.g., 25000)"
+        },
+        "annualRate": {
+          "type": "number",
+          "description": "Annual interest rate as a percentage (e.g., 5.25 for 5.25%)"
+        },
+        "termMonths": {
+          "type": "integer",
+          "description": "Loan term in months (e.g., 60 for a 5-year loan)"
+        }
+      }
+    },
+    "LoanResponse": {
+      "type": "object",
+      "properties": {
+        "monthlyPayment": {
+          "type": "number"
+        },
+        "totalInterest": {
+          "type": "number"
+        },
+        "totalCost": {
+          "type": "number"
+        },
+        "principal": {
+          "type": "number"
+        },
+        "annualRate": {
+          "type": "number"
+        },
+        "termMonths": {
+          "type": "integer"
+        }
+      }
+    },
+    "HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "server": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "auth": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
