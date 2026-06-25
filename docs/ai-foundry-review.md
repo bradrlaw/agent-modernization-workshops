@@ -90,39 +90,50 @@
 
 ### 2.4 Unified Architecture Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                USER SURFACES                                      │
-│  ┌──────────┐   ┌──────────────┐   ┌───────────┐   ┌────────┐  │
-│  │  Teams   │   │ Dynamics 365 │   │ Web/Mobile│   │Outlook │  │
-│  └────┬─────┘   └──────┬───────┘   └─────┬─────┘   └───┬────┘  │
-└───────┼─────────────────┼─────────────────┼─────────────┼────────┘
-        │                 │                 │             │
-┌───────▼─────────────────▼─────────────────▼─────────────▼────────┐
-│              ORCHESTRATION LAYER                                   │
-│  ┌────────────────────┐  ┌────────────────────────────────────┐  │
-│  │ Copilot Studio     │  │ M365 Agents SDK / Teams SDK        │  │
-│  │ (Low-code agents)  │  │ (Pro-code agents)                  │  │
-│  └─────────┬──────────┘  └──────────────┬─────────────────────┘  │
-└────────────┼────────────────────────────┼────────────────────────┘
-             │                            │
-┌────────────▼────────────────────────────▼────────────────────────┐
-│              INTELLIGENCE LAYER                                    │
-│  ┌──────────────────┐  ┌────────────┐  ┌─────────────────────┐  │
-│  │ Azure AI Foundry  │  │ MCP / HTTP │  │ Semantic Kernel /   │  │
-│  │ (Models, RAG,     │  │ Tool       │  │ LangChain /         │  │
-│  │  Fine-tuned,      │  │ Servers    │  │ Custom Orchestrator │  │
-│  │  Code Interpreter)│  │            │  │                     │  │
-│  └──────────────────┘  └────────────┘  └─────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
-             │                            │
-┌────────────▼────────────────────────────▼────────────────────────┐
-│              DATA LAYER                                            │
-│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────────┐  │
-│  │ Azure AI     │  │ Dataverse /   │  │ Azure Storage /      │  │
-│  │ Search (RAG) │  │ Dynamics Data │  │ SQL / Cosmos DB      │  │
-│  └──────────────┘  └───────────────┘  └──────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph USER_SURFACES["User Surfaces"]
+        Teams[Teams]
+        D365[Dynamics 365]
+        WebMobile[Web / Mobile]
+        Outlook[Outlook]
+    end
+
+    subgraph ORCHESTRATION["Orchestration Layer"]
+        CopilotStudio[Copilot Studio<br/>Low-code agents]
+        AgentsSDK[M365 Agents SDK / Teams SDK<br/>Pro-code agents]
+    end
+
+    subgraph INTELLIGENCE["Intelligence Layer"]
+        Foundry[Azure AI Foundry<br/>Models, RAG, Fine-tuned,<br/>Code Interpreter]
+        MCP[MCP / HTTP<br/>Tool Servers]
+        SK[Semantic Kernel /<br/>LangChain / Custom]
+    end
+
+    subgraph DATA["Data Layer"]
+        Search[Azure AI Search<br/>RAG]
+        Dataverse[Dataverse /<br/>Dynamics Data]
+        Storage[Azure Storage /<br/>SQL / Cosmos DB]
+    end
+
+    Teams --> CopilotStudio
+    Teams --> AgentsSDK
+    D365 --> CopilotStudio
+    WebMobile --> AgentsSDK
+    Outlook --> AgentsSDK
+
+    CopilotStudio --> Foundry
+    CopilotStudio --> MCP
+    AgentsSDK --> Foundry
+    AgentsSDK --> SK
+    AgentsSDK --> MCP
+
+    Foundry --> Search
+    Foundry --> Storage
+    MCP --> Dataverse
+    SK --> Search
+    SK --> Dataverse
+    SK --> Storage
 ```
 
 ---
@@ -207,23 +218,19 @@
 
 ### 3.4 Fine-Tuning Process in Foundry
 
-```
-1. Prepare Data (JSONL)
-   ↓
-2. Upload to Foundry (Data assets)
-   ↓
-3. Create Fine-Tune Job
-   - Select base model
-   - Set hyperparameters (epochs, batch size, learning rate multiplier)
-   - Assign training + validation files
-   ↓
-4. Training Runs (minutes to hours depending on data size)
-   ↓
-5. Evaluate (built-in metrics: loss, token accuracy; or custom eval)
-   ↓
-6. Deploy as Custom Endpoint (same as any model deployment)
-   ↓
-7. Use in agents, apps, Copilot Studio (via connection)
+```mermaid
+flowchart TD
+    A[1. Prepare Data - JSONL] --> B[2. Upload to Foundry - Data assets]
+    B --> C[3. Create Fine-Tune Job]
+    C --> C1[Select base model]
+    C --> C2[Set hyperparameters<br/>epochs, batch size, learning rate]
+    C --> C3[Assign training + validation files]
+    C1 --> D[4. Training Runs<br/>minutes to hours depending on data size]
+    C2 --> D
+    C3 --> D
+    D --> E[5. Evaluate<br/>built-in metrics: loss, token accuracy<br/>or custom eval]
+    E --> F[6. Deploy as Custom Endpoint<br/>same as any model deployment]
+    F --> G[7. Use in agents, apps,<br/>Copilot Studio via connection]
 ```
 
 ---
@@ -247,23 +254,19 @@
 
 ### 3.6 Decision Framework
 
-```
-┌─ Need up-to-date knowledge?
-│  YES → RAG (Retrieval-Augmented Generation)
-│  NO ↓
-├─ Need behavioral/format change?
-│  YES → Fine-Tuning (SFT)
-│  NO ↓
-├─ Need nuanced quality preferences?
-│  YES → DPO (Direct Preference Optimization)
-│  NO ↓
-├─ Need complex reasoning alignment?
-│  YES → RFT (Reinforcement Fine-Tuning)
-│  NO ↓
-├─ Need cost reduction on production model?
-│  YES → Distillation (train smaller model from larger one)
-│  NO ↓
-└─ Prompt engineering is sufficient
+```mermaid
+flowchart TD
+    Start[Start] --> Q1{Need up-to-date<br/>knowledge?}
+    Q1 -->|YES| RAG[RAG<br/>Retrieval-Augmented Generation]
+    Q1 -->|NO| Q2{Need behavioral /<br/>format change?}
+    Q2 -->|YES| SFT[Fine-Tuning - SFT]
+    Q2 -->|NO| Q3{Need nuanced<br/>quality preferences?}
+    Q3 -->|YES| DPO[DPO<br/>Direct Preference Optimization]
+    Q3 -->|NO| Q4{Need complex<br/>reasoning alignment?}
+    Q4 -->|YES| RFT[RFT<br/>Reinforcement Fine-Tuning]
+    Q4 -->|NO| Q5{Need cost reduction<br/>on production model?}
+    Q5 -->|YES| Distill[Distillation<br/>train smaller model from larger]
+    Q5 -->|NO| Prompt[Prompt Engineering<br/>is sufficient]
 ```
 
 **When Fine-Tuning makes sense:**
@@ -343,17 +346,14 @@ with a specialist who can assist further. Please stay on the line."
 
 ### 4.3 Skills Lifecycle
 
-```
-1. Author SKILL.md
-   ↓
-2. Create Skill Version (via REST API, Python, .NET, or JS SDK)
-   ↓
-3. Test with agent (download content or attach to toolbox)
-   ↓
-4. Promote to "default_version" when validated
-   ↓
-5. All agents using this skill automatically get the new version
-   (No code changes, no redeployment)
+```mermaid
+flowchart TD
+    A[1. Author SKILL.md] --> B[2. Create Skill Version<br/>via REST API, Python, .NET, or JS SDK]
+    B --> C[3. Test with agent<br/>download content or attach to toolbox]
+    C --> D{Validated?}
+    D -->|YES| E[4. Promote to default_version]
+    D -->|NO| A
+    E --> F[5. All agents using this skill<br/>automatically get the new version<br/>No code changes, no redeployment]
 ```
 
 **Versioning model:**
@@ -473,26 +473,33 @@ Content-Type: application/json
 
 ### 4.8 Architecture: Skills in Multi-Agent Systems
 
-```
-┌─────────────────────────────────────────────────────┐
-│           FOUNDRY SKILLS API (Central Store)          │
-│  ┌────────────┐ ┌──────────────┐ ┌───────────────┐  │
-│  │ escalation │ │  compliance  │ │  brand-voice  │  │
-│  │ policy v3  │ │  rules v2    │ │  v5 (default) │  │
-│  └─────┬──────┘ └──────┬───────┘ └───────┬───────┘  │
-└────────┼───────────────┼─────────────────┼───────────┘
-         │               │                 │
-    ┌────▼────┐    ┌─────▼─────┐    ┌─────▼──────┐
-    │ Toolbox │    │ Toolbox   │    │ Toolbox    │
-    │ (CS     │    │ (Support  │    │ (Sales     │
-    │  Agent) │    │  Agent)   │    │  Agent)    │
-    └────┬────┘    └─────┬─────┘    └─────┬──────┘
-         │               │                 │
-    ┌────▼────┐    ┌─────▼─────┐    ┌─────▼──────┐
-    │ MCP     │    │ MCP       │    │ MCP        │
-    │ Client  │    │ Client    │    │ Client     │
-    │ (Agent) │    │ (Agent)   │    │ (Agent)    │
-    └─────────┘    └───────────┘    └────────────┘
+```mermaid
+graph TB
+    subgraph SkillsAPI["FOUNDRY SKILLS API (Central Store)"]
+        S1[escalation<br/>policy v3]
+        S2[compliance<br/>rules v2]
+        S3[brand-voice<br/>v5 - default]
+    end
+
+    subgraph Toolboxes["Toolboxes"]
+        T1[Toolbox<br/>CS Agent]
+        T2[Toolbox<br/>Support Agent]
+        T3[Toolbox<br/>Sales Agent]
+    end
+
+    subgraph Agents["MCP Clients (Agents)"]
+        A1[MCP Client<br/>Agent]
+        A2[MCP Client<br/>Agent]
+        A3[MCP Client<br/>Agent]
+    end
+
+    S1 --> T1
+    S2 --> T2
+    S3 --> T3
+
+    T1 --> A1
+    T2 --> A2
+    T3 --> A3
 ```
 
 **Key points:**
@@ -604,34 +611,28 @@ Content-Type: application/json
 
 ### 5.6 Decision Tree
 
-```
-WHO is building it?
-├── Business user / Citizen developer
-│   └── → Copilot Studio
-│       (Fastest path; connectors; Teams/D365 native; ALM via solutions)
-│
-└── Professional developer
-    │
-    ├── WHERE does it need to run?
-    │   ├── Teams + Outlook + M365 Copilot (multi-channel)
-    │   │   └── → M365 Agents SDK
-    │   ├── Teams only (deep: meetings, mentions, tabs)
-    │   │   └── → Teams SDK
-    │   ├── Custom app / API / any channel
-    │   │   └── → AI Foundry SDK
-    │   └── Existing bot to migrate
-    │       └── → M365 Agents SDK (Bot Framework successor)
-    │
-    ├── WHAT does it need to do?
-    │   ├── Simple Q&A / FAQ → Copilot Studio or Foundry SDK
-    │   ├── Multi-tool orchestration → Foundry SDK
-    │   ├── Code generation / data analysis → Foundry SDK + Code Interpreter
-    │   ├── Fine-tuned model behavior → Foundry SDK
-    │   └── Multi-agent collaboration → Foundry SDK + Semantic Kernel
-    │
-    └── HOW much control needed?
-        ├── Maximum flexibility, non-Azure OK → Direct API
-        └── Azure-native with guardrails → Foundry SDK
+```mermaid
+flowchart TD
+    WHO{WHO is building it?}
+    WHO -->|Business user /<br/>Citizen developer| CS[Copilot Studio<br/>Fastest path; connectors;<br/>Teams/D365 native; ALM via solutions]
+
+    WHO -->|Professional developer| WHERE{WHERE does it<br/>need to run?}
+
+    WHERE -->|Teams + Outlook +<br/>M365 Copilot| M365[M365 Agents SDK]
+    WHERE -->|Teams only<br/>deep: meetings, mentions, tabs| TeamsSDK[Teams SDK]
+    WHERE -->|Custom app / API /<br/>any channel| FoundrySDK[AI Foundry SDK]
+    WHERE -->|Existing bot<br/>to migrate| M365_2[M365 Agents SDK<br/>Bot Framework successor]
+
+    WHO -->|Professional developer| WHAT{WHAT does it<br/>need to do?}
+    WHAT -->|Simple Q&A / FAQ| CS_or_F[Copilot Studio or Foundry SDK]
+    WHAT -->|Multi-tool orchestration| FoundrySDK2[Foundry SDK]
+    WHAT -->|Code generation /<br/>data analysis| FoundryCI[Foundry SDK +<br/>Code Interpreter]
+    WHAT -->|Fine-tuned model| FoundryFT[Foundry SDK]
+    WHAT -->|Multi-agent collaboration| FoundrySK[Foundry SDK +<br/>Semantic Kernel]
+
+    WHO -->|Professional developer| HOW{HOW much<br/>control needed?}
+    HOW -->|Maximum flexibility,<br/>non-Azure OK| DirectAPI[Direct API]
+    HOW -->|Azure-native<br/>with guardrails| FoundrySDK3[Foundry SDK]
 ```
 
 ---
