@@ -144,19 +144,37 @@
 
 ### 3.2 Fine-Tuning in Azure AI Foundry — Details
 
-**Currently Supported Models (as of 2025-2026):**
+**Currently Supported Models (as of June 2026):**
 
-| Model | Fine-Tune Methods | Notes |
-|-------|-------------------|-------|
-| GPT-4o (2024-08-06+) | SFT | Most capable, highest cost |
-| GPT-4o-mini (2024-07-18+) | SFT | Best price/performance for most use cases |
-| GPT-4.1 / 4.1-mini / 4.1-nano | SFT | Latest generation, nano is cheapest |
-| o4-mini | SFT, RFT | First reasoning model with fine-tuning support |
-| Llama 4 Scout | SFT | Open-source, good for on-prem/regulated scenarios |
-| Phi-3 / Phi-4 series | SFT, LoRA | Small language models, edge deployment |
+| Model | Fine-Tune Methods | Status | Modality | Regions |
+|-------|-------------------|--------|----------|---------|
+| GPT-4o-mini (2024-07-18) | SFT | GA | Text to text | Standard, Global, Developer |
+| GPT-4o (2024-08-06) | SFT, DPO | GA | Text + vision to text | Standard, Global, Developer |
+| GPT-4.1 (2025-04-14) | SFT, DPO | GA | Text + vision to text | Standard, Global, Developer |
+| GPT-4.1-mini (2025-04-14) | SFT, DPO | GA | Text to text | Standard, Global, Developer |
+| GPT-4.1-nano (2025-04-14) | SFT, DPO | GA | Text to text | Standard, Global, Developer |
+| o4-mini (2025-04-16) | RFT | GA | Text to text | Standard, Global |
+| GPT-5 (2025-08-07) | RFT | GA (invitation only) | Text to text | Standard, Global, Developer |
+| Ministral-3B (2411) | SFT | Public preview | Text to text | Global only |
+| Qwen-32B | SFT | Public preview | Text to text | Global only |
+| Llama-3.3-70B-Instruct | SFT | Public preview | Text to text | Global only |
+| gpt-oss-20b | SFT | Public preview | Text to text | Global only |
 
+**Training tiers:**
+
+| Tier | Data Residency | Best For |
+|------|---------------|----------|
+| **Standard** | ✅ Guaranteed (same region) | Regulated workloads requiring data residency |
+| **Global** | ❌ Data may leave region | Affordable pricing, faster queue times |
+| **Developer (preview)** | ❌ No guarantees | Experimentation, price-sensitive; may be preempted |
+
+**Notes:**
+- GPT-5 RFT access is gated — contact your Microsoft account team for enrollment
+- Open-source models (Ministral-3B, Qwen-32B, Llama-3.3-70B, gpt-oss-20b) require the new Foundry UI
+- You can also fine-tune a previously fine-tuned model (format: `base-model.ft-{jobid}`)
+
+> **Source:** [Customize a model with fine-tuning — Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/fine-tuning)  
 > **Source:** [Announcing New Fine-Tuning Models and Techniques in Azure AI Foundry](https://azure.microsoft.com/en-us/blog/announcing-new-fine-tuning-models-and-techniques-in-azure-ai-foundry/)  
-> **Source:** [Extended Support for Fine-Tuning GPT-4o and GPT-4o-mini](https://azurefeeds.com/2026/02/27/announcing-extended-support-for-fine-tuning-gpt-4o-and-gpt-4o-mini/)  
 > **Source:** [AI Foundry Model Catalog](https://ai.azure.com/catalog/models)
 
 ---
