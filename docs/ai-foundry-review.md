@@ -121,6 +121,7 @@ graph TB
     D365 --> CopilotStudio
     WebMobile --> AgentsSDK
     Outlook --> AgentsSDK
+    Outlook --> CopilotStudio
 
     CopilotStudio --> Foundry
     CopilotStudio --> MCP
