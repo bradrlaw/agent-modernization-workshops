@@ -1,6 +1,6 @@
 # Azure AI Foundry — Deep Dive Agenda
 
-**Duration:** 60 minutes  
+**Duration:** 70 minutes  
 **Format:** Discussion + Demo-Ready Walkthrough  
 **Audience:** Development team familiar with AI Foundry basics, Copilot Studio, and beginning Agents SDK exploration  
 **Facilitator:** Brad Lawrence (Brad.Lawrence@microsoft.com)
@@ -16,7 +16,8 @@
 | 0:20 | Model Fine-Tuning Options | 12 min |
 | 0:32 | Foundry Skills & Toolboxes | 10 min |
 | 0:42 | Agents: Foundry vs. Direct LLM Access | 13 min |
-| 0:55 | Next Steps & Q&A | 5 min |
+| 0:55 | Foundry Agent Service | 10 min |
+| 1:05 | Next Steps & Q&A | 5 min |
 
 ---
 
@@ -722,7 +723,193 @@ flowchart TD
 
 ---
 
-## 6. Next Steps & Q&A (5 min)
+## 6. Foundry Agent Service (10 min)
+
+### 6.1 What Is Agent Service?
+
+Foundry Agent Service is a **managed platform** for building, deploying, and scaling AI agents. It provides a single entry point (the **Responses API**) that gives any framework access to Foundry models plus platform tools — regardless of where your agent code runs.
+
+**Key value proposition:** You choose how much of the platform you want. Author a prompt agent with zero code, package your own agent code as a hosted container, or just call the Responses API from your existing process.
+
+---
+
+### 6.2 Agent Types
+
+| | Prompt Agents | Hosted Agents (preview) |
+|-|---------------|------------------------|
+| **Authoring** | Portal, SDK, or REST | Agent Framework, LangGraph, OpenAI Agents SDK, Anthropic Agent SDK, GitHub Copilot SDK, custom code |
+| **Foundry models + tools** | ✅ | ✅ (via Responses API) |
+| **Skill support** | ✅ | ✅ |
+| **Runtime code to maintain** | None | Your agent logic |
+| **Compute to manage** | None — fully managed | Container compute, Foundry-managed |
+| **Managed endpoint** | ✅ | ✅ |
+| **Autoscale** | Automatic, Foundry-managed | Automatic, container instances per session |
+| **Agent identity (Entra)** | ✅ | ✅ Dedicated per agent |
+| **Cost model** | Per-call inference + tool usage | Per-call inference + tool usage + container compute |
+| **Best for** | Fast start, production agents without custom orchestration | Custom code, custom orchestration, multi-agent systems |
+
+---
+
+### 6.3 Prompt Agents
+
+Defined entirely through **configuration** — instructions, model selection, and tools. No application code to maintain, no compute to pay for, no containers to manage.
+
+**Two authoring paths:**
+
+| Path | Workflow |
+|------|----------|
+| **Portal-first** | Create interactively in Foundry portal → test in playground → call from app code |
+| **Code-first** | Define via SDK/REST in CI/CD pipeline → version control → automated rollout |
+
+**Best for:** Getting started fast, internal tools, production agents that don't need custom orchestration, teams that want managed runtime without infrastructure overhead.
+
+---
+
+### 6.4 Hosted Agents (Preview)
+
+Write your agent code with any supported framework, package as a **container image or zip**, and Foundry runs it with:
+
+- Managed endpoint + automatic scaling
+- Dedicated Microsoft Entra identity per agent
+- Session-level state persistence
+- End-to-end observability
+- VM-isolated sandbox with optional BYO VNet
+
+**Supported frameworks:**
+- [Microsoft Agent Framework](https://github.com/microsoft/agent-framework)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+- [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+- [Anthropic Agent SDK](https://github.com/anthropics/anthropic-sdk-python)
+- [GitHub Copilot SDK](https://github.com/github/copilot-sdk)
+- Any custom code (just call the Responses API)
+
+**Best for:** Agents that call custom code, custom orchestration logic, multi-agent systems, custom protocols (webhooks, voice, AG-UI).
+
+---
+
+### 6.5 The Responses API
+
+The **single entry point** behind every agent type. Call it from any process to get Foundry models + platform tools without creating an agent resource.
+
+**What it provides:**
+
+| Capability | Details |
+|------------|---------|
+| Model access | Any model from the Foundry catalog (GPT-4o, Llama, DeepSeek, etc.) |
+| File Search | Semantic search over uploaded documents |
+| Code Interpreter | Agent writes + runs Python in sandbox |
+| Web Search | Grounded web search with citations |
+| Memory | Persistent agent memory across sessions |
+| MCP Servers | Connect remote MCP tool servers |
+| Custom Functions | Your own function definitions (JSON Schema) |
+
+**Key insight:** The same code can call the Responses API from your own process today, then be packaged as a Hosted Agent later when you want a Foundry-managed endpoint. It's additive, not either/or.
+
+---
+
+### 6.6 Built-in Tools
+
+| Tool | What It Does |
+|------|-------------|
+| **File Search** | Semantic search over documents uploaded to the agent |
+| **Code Interpreter** | Agent writes and executes Python for data analysis, charts, calculations |
+| **Web Search** | Grounded internet search with citation links |
+| **Memory** | Persistent key-value memory across conversations |
+| **MCP Servers** | Connect remote MCP tool servers (Azure DevOps, custom Functions, etc.) |
+| **Custom Functions** | Define your own functions via JSON Schema; agent decides when to call them |
+| **SharePoint** | Search and retrieve from SharePoint sites |
+| **WorkIQ / Fabric IQ** | Access organizational knowledge and data insights |
+
+**MCP server authentication options:**
+- Key-based access
+- Microsoft Entra (agent's managed identity or project identity)
+- OAuth On-Behalf-Of (OBO) passthrough
+- Unauthenticated (where appropriate)
+
+---
+
+### 6.7 Toolbox (Preview)
+
+Toolbox lets you define a **curated set of tools once**, manage them centrally, and expose them through a single MCP-compatible endpoint.
+
+- Any MCP-compatible client can consume a toolbox (framework-agnostic)
+- Versioned — create new version, test, promote to default
+- Can include Skills (section 4) alongside tools
+
+---
+
+### 6.8 Development Lifecycle
+
+```mermaid
+flowchart LR
+    Create[1. Create<br/>Portal or SDK] --> Test[2. Test<br/>Playground or local]
+    Test --> Trace[3. Trace<br/>Inspect every decision]
+    Trace --> Evaluate[4. Evaluate<br/>Quality metrics]
+    Evaluate --> Optimize[5. Optimize<br/>Agent optimizer]
+    Optimize --> Publish[6. Publish<br/>Stable endpoint]
+    Publish --> Monitor[7. Monitor<br/>Dashboards + alerts]
+    Monitor -->|Iterate| Create
+```
+
+| Step | Details |
+|------|---------|
+| **Create** | Define prompt agent (portal/SDK) or write Hosted agent code |
+| **Test** | Chat in agents playground; MCP servers exercised directly |
+| **Trace** | End-to-end tracing of model calls, tool invocations, decisions |
+| **Evaluate** | Run evaluations to measure quality, catch regressions |
+| **Optimize** | Automatically improve hosted agent instructions (agent optimizer) |
+| **Publish** | Promote to managed resource with stable endpoint + versioning |
+| **Monitor** | Application Insights, service metrics, dashboards |
+
+---
+
+### 6.9 Enterprise Capabilities
+
+| Capability | Details |
+|------------|---------|
+| **Agent Identity** | Dedicated Microsoft Entra identity per agent; secure scoped access without sharing credentials |
+| **Private Networking** | Run within Azure VNet for full isolation + data residency; BYO VNet for Hosted Agents |
+| **RBAC** | Fine-grained permissions — who can create, invoke, manage agents |
+| **Content Safety** | Integrated filters for prompt injection (including cross-prompt injection) and unsafe outputs |
+| **Guardrails** | Configurable safety controls to reduce harmful outputs |
+| **Bring Your Own Resources** | Use your own storage, AI Search, Cosmos DB for state |
+| **Data Residency** | Virtual networks + resource config to meet compliance requirements |
+
+---
+
+### 6.10 Publishing & Distribution
+
+| Channel | Protocol |
+|---------|----------|
+| **Microsoft Teams** | Activity Protocol |
+| **Microsoft 365 Copilot** | OpenResponses Protocol |
+| **Entra Agent Registry** | Discoverable by other agents and apps |
+| **Custom apps / services** | Invocations Protocol (flexible endpoint) |
+| **Agent-to-Agent (A2A)** | A2A Protocol (preview) — inter-agent communication |
+
+**Versioning:** Automatic snapshots as you iterate. Roll back or compare any version. Published agents inherit enterprise identity and access controls.
+
+---
+
+### 6.11 When to Use Agent Service vs. Other Options
+
+| Scenario | Recommended Approach |
+|----------|---------------------|
+| Quick internal tool, no custom code | **Prompt Agent** (portal-first) |
+| Production agent, CI/CD managed | **Prompt Agent** (code-first via SDK) |
+| Custom orchestration, multi-step logic | **Hosted Agent** with Agent Framework or LangGraph |
+| Existing agent code, want Foundry models/tools | **Responses API** from your own process |
+| Low-code, business-owned | **Copilot Studio** (not Agent Service) |
+| Deep Teams/Outlook integration | **M365 Agents SDK** calling Foundry via Responses API |
+
+> **Source:** [What is Microsoft Foundry Agent Service?](https://learn.microsoft.com/en-us/azure/foundry/agents/overview)  
+> **Source:** [Agent Service Quickstart — Prompt Agents](https://learn.microsoft.com/en-us/azure/foundry/quickstarts/get-started-code)  
+> **Source:** [Hosted Agents Quickstart](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/quickstart-hosted-agent)  
+> **Source:** [Responses API Quickstart](https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/responses-api)
+
+---
+
+## 7. Next Steps & Q&A (5 min)
 
 ### Recommended Actions
 
@@ -743,6 +930,7 @@ flowchart TD
 | MCP Specification | https://modelcontextprotocol.io/specification/2025-03-26/ |
 | Fine-Tuning GitHub Repo | https://github.com/Azure/LLM-Fine-Tuning-Azure |
 | Workshop Labs (hands-on) | https://github.com/bradrlaw/agent-modernization-workshops |
+| Foundry Agent Service Overview | https://learn.microsoft.com/en-us/azure/foundry/agents/overview |
 
 ---
 
