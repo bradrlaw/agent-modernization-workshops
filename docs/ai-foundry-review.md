@@ -55,7 +55,7 @@
 
 | Approach | Tech Stack | Best For |
 |----------|-----------|----------|
-| Copilot Studio → Publish to Teams | Low-code | Business-owned agents, rapid prototyping |
+| Copilot Studio → Publish to Teams + Outlook + M365 Copilot | Low-code | Business-owned agents, rapid prototyping |
 | M365 Agents SDK → Teams channel | Pro-code (.NET/TS) | Complex multi-turn, deep Teams integration (mentions, reactions, meetings) |
 | Teams SDK (formerly Teams AI Library) | Pro-code | Teams-only bots needing deep collaboration features |
 | Foundry Agent → Azure Function → Bot Channel | Pro-code | When Foundry handles all reasoning, Teams is just the surface |
@@ -566,7 +566,7 @@ graph TB
 
 | Platform | Builder | Strengths | Limitations |
 |----------|---------|-----------|-------------|
-| **Copilot Studio** | Citizen dev / IT Pro | Fastest to deploy; native Teams/D365/Power Platform; built-in connectors; ALM via solutions | Limited custom orchestration; less control over model behavior; per-message pricing |
+| **Copilot Studio** | Citizen dev / IT Pro | Fastest to deploy; native Teams/Outlook/D365/Power Platform; M365 Copilot; built-in connectors; ALM via solutions | Limited custom orchestration; less control over model behavior; per-message pricing |
 | **AI Foundry SDK (Python/.NET)** | Pro developer | Full control; custom orchestration; function calling; fine-tuned models; Code Interpreter; evaluation | More setup; you manage deployment; need Azure subscription |
 | **M365 Agents SDK** | Pro developer | Multi-channel (Teams + Outlook + Copilot); replaces Bot Framework; Bring Your Own AI stack | Newer SDK, still evolving; primarily for M365 surfaces |
 | **Teams SDK** | Pro developer | Deepest Teams integration (meetings, mentions, reactions, tabs) | Teams-only; less cross-platform |
@@ -614,7 +614,7 @@ graph TB
 ```mermaid
 flowchart TD
     WHO{WHO is building it?}
-    WHO -->|Business user /<br/>Citizen developer| CS[Copilot Studio<br/>Fastest path; connectors;<br/>Teams/D365 native; ALM via solutions]
+    WHO -->|Business user /<br/>Citizen developer| CS[Copilot Studio<br/>Fastest path; connectors;<br/>Teams/Outlook/D365 native;<br/>M365 Copilot; ALM via solutions]
 
     WHO -->|Professional developer| WHERE{WHERE does it<br/>need to run?}
 

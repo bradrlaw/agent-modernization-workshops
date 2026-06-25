@@ -12,7 +12,7 @@ Choose based on your team's skill set and requirements:
 | Builder | Citizen dev / IT Pro | Pro developer (.NET / TS) |
 | Time to deploy | Hours | Days |
 | Customization | Low–medium | Full control |
-| Multi-channel | Teams + M365 Copilot | Teams + Outlook + M365 Copilot |
+| Multi-channel | Teams + Outlook + M365 Copilot | Teams + Outlook + M365 Copilot |
 | ALM | Power Platform solutions | Git + CI/CD |
 
 **Contact:** Brad Lawrence (Brad.Lawrence@microsoft.com)
@@ -617,7 +617,7 @@ zip teams-app.zip manifest.json color.png outline.png
 | Authentication | Platform-handled SSO | You configure (MSAL + Entra) |
 | CI/CD | Power Platform ALM (solutions) | Git + Azure DevOps / GitHub Actions |
 | Cost model | Per-message Copilot Studio pricing | App Service + Foundry consumption |
-| Multi-channel | Teams + M365 Copilot | Teams + Outlook + M365 Copilot + Web |
+| Multi-channel | Teams + Outlook + M365 Copilot | Teams + Outlook + M365 Copilot + Web |
 | Best for | Quick pilots, business-owned agents | Production workloads, complex orchestration |
 
 ---
