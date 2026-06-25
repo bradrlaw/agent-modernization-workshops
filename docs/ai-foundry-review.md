@@ -154,7 +154,91 @@ graph TB
 
 ---
 
-### 3.2 Fine-Tuning in Azure AI Foundry — Details
+### 3.2 Fine-Tuning Methods Explained
+
+#### Supervised Fine-Tuning (SFT)
+
+The most common method. You provide labeled input/output pairs (prompt → ideal response), and the model learns to reproduce those patterns. SFT adjusts the model's weights so it consistently produces outputs that match your examples in structure, tone, and content.
+
+**How it works:** The model trains on your JSONL dataset of `{"messages": [...]}` examples. Each example shows the model exactly what you want it to say for a given input. Uses LoRA (Low-Rank Adaptation) to efficiently update a small subset of parameters rather than the full model.
+
+**Best for:**
+- Consistent structured output (always return a specific JSON schema)
+- Domain-specific terminology or jargon
+- Specific tone, persona, or formatting requirements
+- Reducing prompt length by baking instructions into the weights
+
+**Example:** Train a customer service model to always respond in a specific format with empathy statements, product codes, and next-step actions.
+
+> **Source:** [Customize a model with fine-tuning — Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/fine-tuning)
+
+---
+
+#### Direct Preference Optimization (DPO)
+
+DPO aligns the model with human preferences by training on **pairs of responses** — one preferred, one rejected — for the same prompt. Instead of showing the model *what* to say (SFT), you show it *which response is better* and let it learn the underlying quality signal.
+
+**How it works:** Your training data contains triplets: `(prompt, chosen_response, rejected_response)`. The model learns to increase the probability of the chosen response relative to the rejected one, without needing a separate reward model.
+
+**Best for:**
+- Improving response quality when you can rank outputs but can't easily write perfect examples
+- Reducing hallucinations or unwanted behaviors
+- Aligning model outputs with subjective quality standards (helpfulness, safety, professionalism)
+
+**Example:** Given a customer question, Response A (detailed, empathetic, accurate) is preferred over Response B (terse, technically correct but unhelpful). DPO teaches the model to favor the style and depth of Response A.
+
+**Supported models (Azure):** GPT-4o, GPT-4.1, GPT-4.1-mini, GPT-4.1-nano
+
+> **Source:** [Fine-tuning with Direct Preference Optimization (DPO)](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/fine-tuning-direct-preference-optimization)
+
+---
+
+#### Reinforcement Fine-Tuning (RFT)
+
+RFT uses **automated graders** (model-based or rule-based) to evaluate agent responses and provide reward signals. The model iteratively improves by maximizing the reward — learning complex reasoning, compliance rules, or multi-step logic that's hard to express through examples alone.
+
+**How it works:** Instead of providing labeled examples, you define **grading criteria** — a rubric, business rules, or another model that scores responses. The model generates candidate responses, gets scored, and updates its weights to maximize the grader's score over many iterations.
+
+**Best for:**
+- Complex reasoning tasks where the "right answer" depends on multi-step logic
+- Compliance and regulatory alignment (rules-based grading)
+- Tasks where it's easier to judge quality than to demonstrate it
+- Scenarios requiring consistency across edge cases
+
+**Example:** A compliance review agent must follow 15 regulatory rules. Instead of writing thousands of examples, you define an automated grader that checks each rule and scores the response. RFT trains the model to consistently pass all checks.
+
+**Supported models (Azure):** o4-mini, GPT-5 (invitation only)
+
+> **Source:** [Reinforcement fine-tuning in Azure AI Foundry](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reinforcement-fine-tuning)
+
+---
+
+#### Distillation
+
+Distillation transfers the behavior of a **large, expensive model** (the "teacher") into a **smaller, cheaper model** (the "student"). The student learns to mimic the teacher's outputs, giving you similar quality at a fraction of the inference cost and latency.
+
+**How it works:** Run your prompts through the teacher model (e.g., GPT-4o) to generate high-quality outputs. Use those outputs as SFT training data for the student model (e.g., GPT-4o-mini or GPT-4.1-nano). The student learns to replicate the teacher's reasoning patterns without the teacher's computational cost.
+
+**Best for:**
+- Reducing production inference costs (smaller model = cheaper tokens)
+- Lowering latency for real-time applications
+- Deploying to resource-constrained environments
+- Scaling from prototype (large model) to production (small model)
+
+**Example:** You've validated that GPT-4o gives excellent results for your loan eligibility assessment. Distill its responses into GPT-4.1-nano — you get 90%+ of the quality at ~10% of the cost per token.
+
+**Workflow:**
+1. Run prompts through teacher model → collect outputs
+2. Format as JSONL training data
+3. Fine-tune student model (SFT) on teacher's outputs
+4. Evaluate student vs. teacher on held-out test set
+5. Deploy student if quality meets threshold
+
+> **Source:** [Distillation in Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai/foundry/fine-tuning/distillation)
+
+---
+
+### 3.3 Fine-Tuning in Azure AI Foundry — Details
 
 **Currently Supported Models (as of June 2026):**
 
@@ -191,7 +275,7 @@ graph TB
 
 ---
 
-### 3.3 Data Format Requirements
+### 3.4 Data Format Requirements
 
 **JSONL (JSON Lines) format — one example per line:**
 
@@ -217,7 +301,7 @@ graph TB
 
 ---
 
-### 3.4 Fine-Tuning Process in Foundry
+### 3.5 Fine-Tuning Process in Foundry
 
 ```mermaid
 flowchart TD
@@ -236,7 +320,7 @@ flowchart TD
 
 ---
 
-### 3.5 Pricing (Approximate — 2025 rates)
+### 3.6 Pricing (Approximate — 2025 rates)
 
 | Component | Approximate Cost |
 |-----------|-----------------|
@@ -253,7 +337,7 @@ flowchart TD
 
 ---
 
-### 3.6 Decision Framework
+### 3.7 Decision Framework
 
 ```mermaid
 flowchart TD
