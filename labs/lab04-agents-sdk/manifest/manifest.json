@@ -1,0 +1,67 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "<teams-app-id-guid>",
+  "packageName": "com.microsoft.workshops.bankingassistantagent",
+  "developer": {
+    "name": "Agent Modernization Workshops",
+    "websiteUrl": "https://learn.microsoft.com/microsoft-365/agents-sdk",
+    "privacyUrl": "https://learn.microsoft.com/legal/microsoft-privacy",
+    "termsOfUseUrl": "https://learn.microsoft.com/legal/termsofuse",
+    "mpnId": "0"
+  },
+  "name": {
+    "short": "Banking Assistant",
+    "full": "Banking Assistant Agent"
+  },
+  "description": {
+    "short": "A Teams banking assistant built with the Microsoft 365 Agents SDK.",
+    "full": "A sample Teams-hosted banking assistant for the Agent Modernization Workshops. It shows welcome messaging, message routing, Adaptive Cards, and an optional Azure AI Foundry extension."
+  },
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+  "accentColor": "#0F6CBD",
+  "bots": [
+    {
+      "botId": "<entra-app-client-id>",
+      "scopes": [
+        "personal",
+        "team"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal"
+          ],
+          "commands": [
+            {
+              "title": "show accounts",
+              "description": "Display the sample accounts for a workshop customer."
+            },
+            {
+              "title": "show balance",
+              "description": "Display checking or savings balances for a workshop customer."
+            },
+            {
+              "title": "show transactions",
+              "description": "Display recent transactions for a workshop customer."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "<your-dev-tunnel-host>",
+    "<your-app-service-name>.azurewebsites.net"
+  ]
+}
