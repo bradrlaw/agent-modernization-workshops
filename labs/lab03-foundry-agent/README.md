@@ -543,6 +543,292 @@ instructions to register an Azure Bot and sideload the agent to Teams.
 > Microsoft 365 Agents SDK integration with activity protocol handling,
 > adaptive cards in Teams, and proper SSO authentication.
 
+
+---
+
+## Deep Dive: Deploying a Pro-Code Agent to Azure AI Foundry (Infrastructure)
+
+The lab code can run locally, but a production pro-code agent needs a small
+cloud footprint around the Foundry project, model deployment, identity, logs,
+and the app host that runs your orchestration code.
+
+```mermaid
+flowchart LR
+    User[User or channel] --> App[Pro-code agent app\nConsole, Flask, API, Teams bot]
+    App --> Identity[Managed identity\nDefaultAzureCredential]
+    Identity --> Project[Azure AI Foundry project]
+    Project --> Model[Model deployment\nGPT-4o / GPT-4.1]
+    Project --> Conn[Connections\nSearch, storage, APIs]
+    Project --> KV[Key Vault]
+    App --> Logs[Application Insights]
+    App --> Store[(State / memory\nCosmos DB or storage)]
+    App --> Search[Azure AI Search\noptional RAG]
+    ACR[Container Registry\noptional] --> Host[App Service / Container Apps / AKS]
+    Host --> App
+```
+
+### Foundry resource model
+
+In the current Foundry experience, the top-level **Azure AI Foundry resource**
+(or account) provides shared governance, model access, networking, and project
+management. A **Project** isolates one workload or team area and contains model
+deployments, connections, evaluations, and agent assets.
+
+This lab uses the newer project-based Foundry model. The older **hub-based**
+workspace model used a Hub + Project hierarchy and is now considered the classic
+experience; use new projects for greenfield workshops unless your environment is
+already standardized on classic.
+
+### Infrastructure footprint / dependent resources
+
+| Resource | Why it matters |
+|---|---|
+| Azure AI Foundry / AI Services | Hosts the project, model deployments, agents, and governance controls |
+| Azure OpenAI model deployment | The model endpoint used by `MODEL_DEPLOYMENT_NAME` |
+| Storage account | Artifacts, files, and supporting data depending on the project configuration |
+| Key Vault | Secrets, keys, and connection material when keyless auth is not available |
+| Application Insights | Logs, traces, latency, failures, and safety/filter telemetry |
+| Container Registry (optional) | Stores images when deploying the Flask app or API as a container |
+| Azure AI Search (optional) | Retrieval-augmented generation over product docs, policies, or FAQs |
+| Cosmos DB (optional) | Durable state, session metadata, and long-term memory records |
+
+### Model deployment SKUs
+
+| Deployment choice | Use when |
+|---|---|
+| **Standard** | You want regional deployment and simple pay-as-you-go capacity |
+| **Global Standard** | You want lower cost and global routing where data processing requirements allow it |
+| **Provisioned Throughput (PTU)** | You need reserved capacity, more predictable latency, and production throughput guarantees |
+| **Data-zone options** | You need routing constrained to a supported geography or data zone rather than fully global routing |
+
+> ⚠️ Model availability, quota, and deployment types vary by region and
+> subscription. Confirm the available options in **Models + endpoints** before
+> promising a production SLA.
+
+### Agent hosting choices
+
+| Hosting pattern | What runs where |
+|---|---|
+| Foundry Agent Service prompt agent | Fully managed agent configuration, tools, and threads in Foundry |
+| Hosted agents / bring-your-own container (preview where available) | Foundry hosts more of the runtime while you bring custom code or packaging |
+| Self-hosted orchestration code | Your Python or .NET app runs on Azure App Service, Azure Container Apps, or AKS and calls the Foundry model endpoint or Responses API |
+| Managed online endpoint | Useful for custom scoring/inference code that should be exposed as a managed Azure ML-style endpoint |
+
+For this lab, the console and Flask samples are **self-hosted orchestration**:
+your code owns the tool-call loop and calls the Foundry project endpoint.
+
+### Identity, security, and networking
+
+- Prefer **managed identity** for deployed apps. Use system-assigned identity for
+  a single app, or user-assigned identity when multiple apps share one identity.
+- Use **keyless connections** with Microsoft Entra ID when supported. Assign RBAC
+  roles such as **Azure AI Developer** and **Cognitive Services User** at the
+  narrowest scope that works.
+- Store unavoidable secrets in **Key Vault**, not in app settings or source code.
+- For private workloads, use **managed VNet isolation**, **private endpoints**,
+  disabled public network access, and outbound/data-exfiltration controls.
+
+### Infrastructure as Code & CI/CD
+
+Use `azd` templates, Bicep/ARM, Terraform with `azapi`, GitHub Actions, or Azure
+DevOps to deploy the Foundry resource, project, model deployment, networking,
+identity, and app host together.
+
+Illustrative Bicep for the surrounding app resources:
+
+```bicep
+param location string = resourceGroup().location
+param appName string = 'banking-agent'
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${appName}-appi'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+  }
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: '${appName}-kv'
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    sku: { family: 'A', name: 'standard' }
+    enableRbacAuthorization: true
+  }
+}
+
+// Add the Foundry resource/project/model deployment with your current
+// organization-approved module or azapi resource version.
+```
+
+> Tip: In CI/CD, deploy infrastructure first, then assign RBAC, then deploy the
+> app image or package. Keep model deployment names stable so app configuration
+> can stay environment-specific (`gpt-4o-dev`, `gpt-4o-prod`, etc.).
+
+---
+
+## Guardrails & Content Controls in Azure AI Foundry
+
+A pro-code agent gives you flexibility, but it also makes you responsible for
+adding safety controls around prompts, tool calls, data retrieval, and final
+responses.
+
+```mermaid
+flowchart LR
+    U[User input] --> PS[Prompt Shields\nDirect jailbreak checks]
+    D[Retrieved docs / tool data] --> IPS[Prompt Shields\nIndirect injection checks]
+    PS --> IF[Input content filters]
+    IPS --> IF
+    IF --> M[Model + tool orchestration]
+    M --> G[Groundedness check\nwhen source data is available]
+    G --> OF[Output content filters]
+    OF --> A[Assistant response]
+    OF --> Telemetry[Log filter hits\nApp Insights / monitoring]
+```
+
+### Content filters and RAI policies
+
+Azure AI Content Safety filters evaluate both prompts and completions across four
+harm categories: **hate**, **sexual**, **violence**, and **self-harm**. Each
+category has severity levels, and a Responsible AI (RAI) content-filter policy
+can be attached to a model deployment to decide which severities are allowed,
+annotated, or blocked.
+
+| Control | Practical use |
+|---|---|
+| Default content filter | Baseline filtering applied to model deployments |
+| Custom RAI policy | Adjust thresholds per deployment when your scenario requires it |
+| Annotate vs block | Capture category/severity metadata, or stop unsafe input/output |
+| Streaming | Handle partial responses carefully because a stream can be interrupted when filtering triggers |
+
+> ⚠️ Some changes to default filtering behavior can require approval. Use the
+> default policy for workshops unless you have a clear reason to customize it.
+
+### Additional Foundry guardrails
+
+- **Prompt Shields** detect direct jailbreak attempts in user input and indirect
+  or cross-prompt injection attempts hidden in retrieved documents or tool data.
+- **Groundedness detection** checks whether model output is supported by provided
+  source content; groundedness correction can help revise unsupported answers
+  where the feature is available.
+- **Protected material detection** helps identify protected text or code content
+  in model outputs.
+- **Custom categories and blocklists** let you define domain-specific terms,
+  phrases, or harm categories that should be flagged or blocked.
+
+### How to configure
+
+In the Foundry portal, use **Guardrails + controls** and **Content filters** to
+review the default policy, create custom RAI policies, and attach them to model
+deployments. For repeatable environments, use the documented APIs/IaC support
+for content-filter policies rather than hand-configuring production deployments.
+
+### Best practices
+
+- Filter **both input and output**; do not rely on the system prompt alone.
+- Harden the system prompt against cross-customer data access and tool misuse.
+- Give tools least-privilege access and validate tool arguments in code.
+- Require human approval for high-risk actions such as payments, account changes,
+  or irreversible workflow steps.
+- Log and monitor filter hits, jailbreak detections, and groundedness failures so
+  Lab 07-style observability can drive evaluation and improvement.
+
+---
+
+## Context Compaction & Memory Recall
+
+Conversation history improves continuity, but unbounded history eventually hurts
+latency, cost, and answer quality. Production agents need an explicit strategy
+for what stays in the short-term context and what gets promoted to durable
+memory.
+
+```mermaid
+flowchart TB
+    Turn[New user turn] --> Thread[Short-term memory\nThread / context window]
+    Thread --> Budget[Token budget check]
+    Budget -->|Fits| Model[Model response]
+    Budget -->|Too large| Compact[Compact history\nsummary + salient facts]
+    Compact --> Thread
+    Thread --> Extract[Extract durable facts]
+    Extract --> Memory[(Long-term memory store\nAzure AI Search / Cosmos DB)]
+    Turn --> Retrieve[Retrieve top-k relevant memories]
+    Memory --> Retrieve
+    Retrieve --> Thread
+```
+
+### The context-window problem
+
+As history grows, every turn can send more tokens to the model. That increases
+cost and latency, and very long prompts can reduce quality because important
+facts may be overlooked or "lost in the middle." Token limits also force the
+agent to decide what to keep when the full transcript no longer fits.
+
+### Compaction strategies
+
+| Strategy | Description |
+|---|---|
+| Truncation / sliding window | Drop the oldest turns and keep the most recent conversation |
+| Rolling summarization | Summarize older turns into a compact running summary |
+| Selective retention / salience | Preserve key facts, entities, preferences, decisions, and open tasks |
+| Token budgeting per turn | Reserve tokens for system prompt, retrieved memory, tool results, and the answer |
+
+Python-ish rolling summary pattern:
+
+```python
+def prepare_context(messages, running_summary, max_tokens):
+    if estimate_tokens(messages, running_summary) <= max_tokens:
+        return [system_prompt(running_summary), *messages]
+
+    old, recent = split_history(messages, keep_recent_turns=6)
+    running_summary = summarize(
+        previous_summary=running_summary,
+        transcript=old,
+        keep=["customer_id", "account_ids", "decisions", "open_questions"],
+    )
+    return [system_prompt(running_summary), *recent]
+```
+
+### Short-term memory
+
+Foundry Agent Service threads persist a conversation and the service manages how
+thread messages fit into the model context. The Responses API also provides
+stateful conversation handling where available, so the service can manage
+context and token budgeting across response chains. If you build directly
+against a stateless model endpoint, keep the same discipline in your own code:
+track messages, estimate token pressure, and compact before the prompt becomes
+expensive or unreliable.
+
+### Long-term memory & recall
+
+Long-term memory stores facts that should survive across sessions. Options
+include Agent Service persistent memory where available (preview features should
+be treated as preview) or retrieval-augmented memory in a vector store such as
+Azure AI Search or Cosmos DB with embeddings.
+
+A common pattern is:
+
+1. Extract salient, structured facts from the conversation.
+2. Store them with metadata such as user/session, source, timestamp, and expiry.
+3. Embed the memory text and index it in the vector store.
+4. On a new turn, retrieve the top-k relevant memories and inject only those into
+   the model context.
+
+### Best practices
+
+- Summarize when token thresholds are crossed, not only when the model fails.
+- Store only salient, structured facts; avoid dumping full transcripts into
+  long-term memory.
+- Retrieve top-k memories by relevance and recency, then deduplicate before
+  injecting them into the prompt.
+- Keep a clear boundary between systems of record (core banking data) and
+  ephemeral conversational memory.
+- Govern PII in memory with retention, encryption, access control, and deletion
+  workflows.
+- Evaluate memory recall quality with test conversations before using it in a
+  high-stakes workflow.
+
 ---
 
 ## Deliverables
@@ -553,10 +839,12 @@ instructions to register an Azure Bot and sideload the agent to Teams.
 - [ ] All 6 function tools tested and passing
 - [ ] Console chat client running with full agent capabilities
 - [ ] Multi-tool and multi-turn conversations verified
+- [ ] Guardrails and context/memory design considerations reviewed
 
 ### Stretch (Steps 7–9)
 - [ ] Web chat interface running locally
 - [ ] Agent deployed to Azure Container Apps
+- [ ] Production deployment architecture mapped to Foundry, identity, networking, and IaC options
 - [ ] Teams channel configured and bot responding
 
 ---
@@ -623,6 +911,25 @@ Lab 02 (Low-Code)                    Lab 03 (Pro-Code)
     │ Knowledge Source    │              │ System prompt      │
     └─────────┘                          └─────────┘
 ```
+
+
+---
+
+## References
+
+- [Microsoft Foundry architecture](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/architecture)
+- [Create projects in Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/create-projects)
+- [Configure private link for Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/configure-private-link)
+- [Azure AI Foundry Agent Service overview](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview)
+- [Deploy models as serverless APIs](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/deploy-models-serverless)
+- [Content filtering in Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/content-filtering)
+- [Azure AI Content Safety harm categories](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories)
+- [Prompt Shields for jailbreak detection](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection)
+- [Groundedness detection](https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/groundedness)
+- [Configure content filters](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/configure-content-filters)
+- [Threads, runs, and messages](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/threads-runs-messages)
+- [Prompt engineering and context management](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/prompt-engineering)
+- [Azure Architecture Center: AI and machine learning](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/)
 
 ---
 
