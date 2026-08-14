@@ -2,6 +2,7 @@ using Azure.AI.Projects;
 using Azure.Identity;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using BankingConcierge.Skills;
 using BankingConcierge.Tools;
 
 namespace BankingConcierge;
@@ -46,18 +47,24 @@ public static class AgentTeam
         return (client, model);
     }
 
-    public static BankingTeam Build(AIProjectClient client, string model, string customerId)
+    public static BankingTeam Build(AIProjectClient client, string model, string customerId,
+        SkillLibrary? skills = null)
     {
         // Inject the session customer so specialists never ask for an ID or cross customers.
         string sessionNote =
             $"\n\nCurrent session customer ID: {customerId}. Use it for all lookups; never ask "
             + "the customer for it and never reveal another customer's data.";
 
+        // Agent -> Skills: append the versioned SKILL.md rules mapped to each agent (or nothing
+        // when skills are disabled). Editing a SKILL.md and re-running changes behavior with no
+        // code change — the whole point of a shared skill library.
+        string Skilled(string agentName) => sessionNote + (skills?.ComposeFor(agentName) ?? string.Empty);
+
         var accounts = client.AsAIAgent(
             model: model,
             instructions: "You are the Accounts specialist for a retail bank. You handle balances, "
                 + "recent transactions, account lists, and customer profile lookups. Format currency "
-                + "as $#,###.##." + sessionNote,
+                + "as $#,###.##." + Skilled("AccountsAgent"),
             name: "AccountsAgent",
             description: "Balances, transactions, account lists, and profile lookups.",
             tools:
@@ -71,7 +78,7 @@ public static class AgentTeam
         var lending = client.AsAIAgent(
             model: model,
             instructions: "You are the Lending specialist. You look up current loan rates and "
-                + "calculate loan payments. Always state the APR and its as-of date." + sessionNote,
+                + "calculate loan payments. Always state the APR and its as-of date." + Skilled("LendingAgent"),
             name: "LendingAgent",
             description: "Loan rates and payment calculations.",
             tools:
@@ -83,7 +90,7 @@ public static class AgentTeam
         var cards = client.AsAIAgent(
             model: model,
             instructions: "You are the Cards & Fraud specialist. You answer card questions, initiate "
-                + "disputes, and handle general banking FAQ." + sessionNote,
+                + "disputes, and handle general banking FAQ." + Skilled("CardsFraudAgent"),
             name: "CardsFraudAgent",
             description: "Card questions, disputes, and general banking FAQ.",
             tools: [AIFunctionFactory.Create(BankingTools.SearchFaq)]);
@@ -92,7 +99,7 @@ public static class AgentTeam
             model: model,
             instructions: "You are the Compliance specialist. You add required disclosures, verify PII "
                 + "handling, and ensure responses follow policy. You have no data tools; you review and "
-                + "annotate what the other agents produce." + sessionNote,
+                + "annotate what the other agents produce." + Skilled("ComplianceAgent"),
             name: "ComplianceAgent",
             description: "Adds required disclosures and checks policy compliance.");
 
@@ -101,7 +108,7 @@ public static class AgentTeam
             instructions: "You are the triage concierge for a retail bank. Read the customer's request "
                 + "and hand off to exactly one specialist: AccountsAgent (balances/transactions/profile), "
                 + "LendingAgent (rates/payments), or CardsFraudAgent (cards/disputes/FAQ). Do not answer "
-                + "domain questions yourself." + sessionNote,
+                + "domain questions yourself." + Skilled("Concierge"),
             name: "Concierge",
             description: "Routes requests to the right specialist agent.");
 

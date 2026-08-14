@@ -31,6 +31,7 @@ from tools import (
     calculate_loan_payment,
     search_faq,
 )
+from skill_library import SkillLibrary
 
 load_dotenv()
 
@@ -65,24 +66,47 @@ def _session_note(customer_id: str) -> str:
     )
 
 
-def build_team(client: FoundryChatClient, customer_id: str = DEFAULT_CUSTOMER_ID) -> dict:
+def build_team(
+    client: FoundryChatClient,
+    customer_id: str = DEFAULT_CUSTOMER_ID,
+    use_skills: bool | None = None,
+) -> dict:
     """Returns the specialist team keyed by role.
 
     The same ``Agent`` objects can be dropped into any orchestration pattern — only
     the orchestration *builder* changes from one pattern script to the next.
+
+    Agent -> Skills: by default (``use_skills=None``) the shared ``SKILL.md`` files under
+    ``../skills`` are loaded at runtime and composed into each agent's instructions. Set
+    ``use_skills=False`` — or env ``USE_SKILLS=off`` — to see the same team WITHOUT the shared
+    rules, then edit a ``SKILL.md`` and re-run to change behavior with no code change.
 
     Tools: the Lab 03 callables are passed directly; the framework generates each
     tool schema from the function signature + docstring. If your installed version
     prompts for tool-call approval, wrap each callable with
     ``tool(approval_mode="never_require")`` from ``agent_framework``.
     """
+    if use_skills is None:
+        use_skills = os.environ.get("USE_SKILLS", "on").strip().lower() not in (
+            "off", "false", "no", "0",
+        )
+    skills = SkillLibrary.load() if use_skills else None
+    if skills and len(skills):
+        print(f"\u2713 Skills: ON — loaded {len(skills)} from ./skills ({', '.join(skills.names)}).")
+    else:
+        print("\u2022 Skills: OFF — base instructions only (set USE_SKILLS=on to enable).")
+
+    def instr(agent_name: str, base: str) -> str:
+        return base + _session_note(customer_id) + (skills.compose_for(agent_name) if skills else "")
+
     accounts = Agent(
         client=client,
         name="AccountsAgent",
-        instructions=(
+        instructions=instr(
+            "AccountsAgent",
             "You are the Accounts specialist for a retail bank. You handle balances, recent "
             "transactions, account lists, and customer profile lookups. Format currency as "
-            "$#,###.##." + _session_note(customer_id)
+            "$#,###.##.",
         ),
         tools=[get_account_balance, get_recent_transactions, list_accounts, get_customer_profile],
     )
@@ -90,9 +114,10 @@ def build_team(client: FoundryChatClient, customer_id: str = DEFAULT_CUSTOMER_ID
     lending = Agent(
         client=client,
         name="LendingAgent",
-        instructions=(
+        instructions=instr(
+            "LendingAgent",
             "You are the Lending specialist. You look up current loan rates and calculate loan "
-            "payments. Always state the APR and its as-of date." + _session_note(customer_id)
+            "payments. Always state the APR and its as-of date.",
         ),
         tools=[get_loan_rates, calculate_loan_payment],
     )
@@ -100,9 +125,10 @@ def build_team(client: FoundryChatClient, customer_id: str = DEFAULT_CUSTOMER_ID
     cards = Agent(
         client=client,
         name="CardsFraudAgent",
-        instructions=(
+        instructions=instr(
+            "CardsFraudAgent",
             "You are the Cards & Fraud specialist. You answer card questions, initiate disputes, "
-            "and handle general banking FAQ." + _session_note(customer_id)
+            "and handle general banking FAQ.",
         ),
         tools=[search_faq],
     )
@@ -110,21 +136,23 @@ def build_team(client: FoundryChatClient, customer_id: str = DEFAULT_CUSTOMER_ID
     compliance = Agent(
         client=client,
         name="ComplianceAgent",
-        instructions=(
+        instructions=instr(
+            "ComplianceAgent",
             "You are the Compliance specialist. You add required disclosures, verify PII handling, "
             "and ensure responses follow policy. You have no data tools; you review and annotate "
-            "what other agents produce." + _session_note(customer_id)
+            "what other agents produce.",
         ),
     )
 
     concierge = Agent(
         client=client,
         name="Concierge",
-        instructions=(
+        instructions=instr(
+            "Concierge",
             "You are the triage concierge for a retail bank. Read the customer's request and hand "
             "off to exactly one specialist: AccountsAgent (balances/transactions/profile), "
             "LendingAgent (rates/payments), or CardsFraudAgent (cards/disputes/FAQ). Do not answer "
-            "domain questions yourself." + _session_note(customer_id)
+            "domain questions yourself.",
         ),
     )
 

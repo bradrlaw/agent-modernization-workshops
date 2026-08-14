@@ -187,6 +187,7 @@ lab06-multi-agent/
 │   ├── customers.json  accounts.json  transactions.json  banking-faq.txt
 ├── src/                              # Python path (Microsoft Agent Framework)
 │   ├── banking_agents.py             # Specialist agent factory + shared tools
+│   ├── skill_library.py              # Loads SKILL.md files at runtime (Agent → Skills)
 │   ├── orchestrate_handoff.py        # Flagship: Concierge → specialists (Handoff)
 │   ├── patterns/
 │   │   ├── sequential_loan.py        # Sequential pipeline
@@ -199,11 +200,12 @@ lab06-multi-agent/
 │   ├── BankingConcierge.slnx
 │   ├── .env.example
 │   └── BankingConcierge/             # Console host: agent factory, tools, pattern switch
-│       ├── Program.cs                #   --pattern handoff|sequential|concurrent|groupchat
-│       ├── AgentTeam.cs              #   specialist factory (.AsAIAgent)
+│       ├── Program.cs                #   --pattern handoff|sequential|concurrent|groupchat|magentic  --skills on|off
+│       ├── AgentTeam.cs              #   specialist factory (.AsAIAgent) — composes Skills into instructions
+│       ├── Skills/SkillLibrary.cs    #   loads SKILL.md files at runtime (Agent → Skills)
 │       ├── Data/  Models/  Tools/    #   banking domain (from Lab 03)
 │       └── BankingConcierge.csproj
-├── skills/                           # Agent → Skills (SKILL.md files)
+├── skills/                           # Agent → Skills (SKILL.md files, loaded at runtime)
 │   ├── escalation-policy/SKILL.md
 │   ├── compliance-guidelines/SKILL.md
 │   └── brand-voice/SKILL.md
@@ -224,7 +226,7 @@ banking tools — this separation of concerns is the whole point.
 | **Accounts Agent** | Balances, transactions, account lists, profile | `get_account_balance`, `get_recent_transactions`, `list_accounts`, `get_customer_profile` |
 | **Lending Agent** | Loan rates and payment math | `get_loan_rates`, `calculate_loan_payment` |
 | **Cards & Fraud Agent** | Card questions, disputes, general FAQ | `search_faq` (+ demo card/fraud stubs) |
-| **Compliance Agent** | Disclosures, policy checks, PII handling | *(no data tools — reasons over Skills)* |
+| **Compliance Agent** | Disclosures, policy checks, PII handling | *(no data tools — loads the `compliance-guidelines` Skill at runtime)* |
 | **Concierge** | Triage + delegation + synthesis | *(no data tools — orchestrates specialists)* |
 
 ---
@@ -254,7 +256,13 @@ dotnet run --project BankingConcierge -- --pattern concurrent    # parallel heal
 dotnet run --project BankingConcierge -- --pattern groupchat     # round-robin dispute table
 dotnet run --project BankingConcierge -- --pattern magentic       # adaptive planner (plans, delegates, re-plans)
 dotnet run --project BankingConcierge -- --pattern handoff --customer CUST-1002
+dotnet run --project BankingConcierge -- --pattern sequential --skills off   # Agent → Skills OFF (base instructions only)
 ```
+
+> 🧩 **Skills are ON by default** — the specialists load the versioned `SKILL.md` files at
+> runtime. Add `--skills off` (.NET) or set `USE_SKILLS=off` (Python) to run the same team
+> without them, then edit a `SKILL.md` and re-run to change behavior with no code change. See
+> **Part B1**.
 
 > 💡 The .NET project targets **net8.0**. If your machine only has a newer .NET runtime
 > installed, set `DOTNET_ROLL_FORWARD=LatestMajor` before `dotnet run`. Windows consoles:
@@ -684,6 +692,31 @@ every agent picks it up — **no redeploy**. This lab ships three:
 | [`compliance-guidelines`](skills/compliance-guidelines/SKILL.md) | One source of truth across **every** specialist; audit trail |
 | [`brand-voice`](skills/brand-voice/SKILL.md) | Marketing updates tone quarterly; no dev cycle |
 
+**This lab ships a runnable rendering.** Both paths load these `SKILL.md` files at runtime and
+compose the mapped rules into each specialist's instructions — so you can demonstrate the value
+prop today without the preview Skills API. Toggle it to see the difference:
+
+```bash
+# .NET — skills ON (default) vs OFF
+dotnet run --project BankingConcierge -- --pattern sequential                # Skills: ON
+dotnet run --project BankingConcierge -- --pattern sequential --skills off   # Skills: OFF
+
+# Python — same toggle via env (default ON)
+python patterns/sequential_loan.py                     # Skills: ON
+set USE_SKILLS=off&& python patterns/sequential_loan.py   # Skills: OFF  (bash: USE_SKILLS=off python …)
+```
+
+With skills **on**, the Compliance agent enforces the exact rules from
+`compliance-guidelines/SKILL.md` (last-4 only, APR + as-of date, "estimates — *not a commitment
+to lend*", no tax/legal advice). Edit the `SKILL.md`, re-run, and every mapped agent changes
+behavior — **no code change**. The skill→agent mapping lives in
+[`SkillLibrary`](src-dotnet/BankingConcierge/Skills/SkillLibrary.cs) /
+[`skill_library.py`](src/skill_library.py) (`compliance-guidelines` is shared by **all**).
+
+The **production path** stores these centrally in Foundry and surfaces them through an **MCP
+Toolbox** so any MCP client (your specialists, GitHub Copilot, Claude, custom agents) discovers
+them via `resources/list` → `resources/read`:
+
 ```mermaid
 graph TB
     subgraph API["Foundry Skills API (central store)"]
@@ -911,7 +944,7 @@ Use this to confirm a multi-agent demo shows the *current* surface, not just one
 
 - [x] **All 5 patterns** (Sequential, Concurrent, Group Chat, Handoff, Magentic) — not just router/handoff
 - [x] **Microsoft Agent Framework** as the go-forward SDK (Python + .NET)
-- [x] **Agent → Skills** via MCP Toolbox (`SKILL.md`, versioned, no-redeploy updates)
+- [x] **Agent → Skills** — versioned `SKILL.md` **loaded at runtime** (runnable `--skills on|off` toggle) + the production **MCP Toolbox** path
 - [x] **Agent → Tools** via remote **MCP servers**
 - [x] **Declarative Workflows** (visual + YAML) — with the **Dec 1, 2026 retirement** caveat
 - [x] **A2A protocol** for cross-vendor / cross-cloud agents (preview)

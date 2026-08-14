@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using BankingConcierge;
+using BankingConcierge.Skills;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Agents.AI.Workflows.Specialized.Magentic;
@@ -19,6 +20,12 @@ using Microsoft.Extensions.AI;
 //   dotnet run -- --pattern groupchat      (round-robin dispute round-table)
 //   dotnet run -- --pattern magentic       (adaptive planner: plans, delegates, re-plans)
 //   dotnet run -- --pattern handoff --customer CUST-1002
+//   dotnet run -- --pattern sequential --skills off  (Agent->Skills OFF: base instructions only)
+//
+// Agent -> Skills: by default the specialists load the versioned SKILL.md files under
+// ../../skills/ at runtime (compliance-guidelines, brand-voice, escalation-policy). Pass
+// `--skills off` to see the same team WITHOUT the shared rules, then edit a SKILL.md and
+// re-run to change behavior with no code change.
 //
 // Verified against github.com/microsoft/agent-framework
 // (dotnet/samples/03-workflows) as of Aug 2026.
@@ -26,13 +33,30 @@ using Microsoft.Extensions.AI;
 
 Console.OutputEncoding = Encoding.UTF8;
 
-var (pattern, customerId) = ParseArgs(args);
+var (pattern, customerId, useSkills) = ParseArgs(args);
 
 try
 {
     var (client, model) = AgentTeam.CreateProjectClient();
     Console.WriteLine($"Connecting to Azure AI Foundry (model: {model})...");
-    var team = AgentTeam.Build(client, model, customerId);
+
+    SkillLibrary? skills = useSkills ? SkillLibrary.Load() : null;
+    var team = AgentTeam.Build(client, model, customerId, skills);
+
+    if (skills is { Count: > 0 })
+    {
+        Console.WriteLine($"✓ Skills: ON — loaded {skills.Count} from ./skills "
+            + $"({string.Join(", ", skills.All.Select(s => s.Name))}).");
+    }
+    else if (useSkills)
+    {
+        Console.WriteLine("• Skills: ON but none found under ./skills — using base instructions.");
+    }
+    else
+    {
+        Console.WriteLine("• Skills: OFF — base instructions only (pass --skills on to enable).");
+    }
+
     Console.WriteLine($"✓ Team ready. Session customer: {customerId}. Pattern: {pattern}.\n");
 
     switch (pattern)
@@ -199,10 +223,11 @@ static async Task<List<ChatMessage>> StreamWorkflowAsync(Workflow workflow, List
     return [];
 }
 
-static (string Pattern, string CustomerId) ParseArgs(string[] args)
+static (string Pattern, string CustomerId, bool UseSkills) ParseArgs(string[] args)
 {
     var pattern = "handoff";
     var customerId = Environment.GetEnvironmentVariable("DEMO_CUSTOMER_ID") ?? "CUST-1001";
+    var useSkills = true;
 
     for (var i = 0; i < args.Length - 1; i++)
     {
@@ -214,8 +239,12 @@ static (string Pattern, string CustomerId) ParseArgs(string[] args)
             case "--customer" or "-c":
                 customerId = args[i + 1];
                 break;
+            case "--skills" or "-s":
+                var v = args[i + 1].ToLowerInvariant();
+                useSkills = v is not ("off" or "false" or "no" or "0");
+                break;
         }
     }
 
-    return (pattern, customerId);
+    return (pattern, customerId, useSkills);
 }
