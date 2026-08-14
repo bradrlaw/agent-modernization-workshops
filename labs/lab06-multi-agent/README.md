@@ -19,6 +19,9 @@ rather than re-learning the tools. Both a **Python** path (`src/`) and a **.NET*
 
 > **Contact:** Brad.Lawrence@microsoft.com
 
+> **Presenting this lab?** A 14-slide deck and a step-by-step demo cheat-sheet live in
+> [`presentation/`](presentation/) — start with [`presentation/DEMO-SCRIPT.md`](presentation/DEMO-SCRIPT.md).
+
 ---
 
 ## What "current" means (read this first)
@@ -209,8 +212,11 @@ lab06-multi-agent/
 │   ├── escalation-policy/SKILL.md
 │   ├── compliance-guidelines/SKILL.md
 │   └── brand-voice/SKILL.md
-└── workflows/
-    └── loan-application.workflow.yaml # Declarative Foundry Workflow (Part C)
+├── workflows/
+│   └── loan-application.workflow.yaml # Declarative Foundry Workflow (Part C)
+└── presentation/                     # Presenter aids
+    ├── Lab06-Multi-Agent-Orchestration.pptx  # 14-slide deck (commands in speaker notes)
+    └── DEMO-SCRIPT.md                # Step-by-step demo cheat-sheet (all 6 demos)
 ```
 
 ---
