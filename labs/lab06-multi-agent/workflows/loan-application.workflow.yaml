@@ -1,0 +1,45 @@
+# Declarative Foundry Multi-Agent Workflow — Loan Application pipeline.
+#
+# Sequential orchestration: Accounts (verify) -> Lending (quote) -> Compliance (disclose).
+# Edit visually in the Foundry portal (Build -> Create new workflow) or in VS Code with the
+# Microsoft Foundry Toolkit, then toggle the YAML view. Run it from the portal chat pane.
+#
+# ⚠️  RETIRING Dec 1, 2026. Microsoft's guidance is to build new workflows on the
+#     Microsoft Agent Framework (see ../src for the code-first equivalent).
+#     Source: https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/workflow
+#
+# Confirmed top-level keys: kind, metadata, trigger, steps.
+# Variables use Local.* / System.* (Power Fx). This YAML round-trips with the visual designer.
+
+kind: workflow
+metadata:
+  name: loan-application
+  description: Verify the customer, build a quote, and add required disclosures.
+
+trigger:
+  kind: OnConversationStart
+  id: start
+  actions:
+    - kind: SetVariable
+      id: capture_request
+      variable: Local.Request
+      value: =System.LastMessageText
+
+steps:
+  - kind: InvokeAzureAgent
+    id: verify
+    agent: AccountsAgent
+    input: ${Local.Request}
+    output: Local.Eligibility
+
+  - kind: InvokeAzureAgent
+    id: quote
+    agent: LendingAgent
+    input: ${Local.Eligibility}
+    output: Local.Quote
+
+  - kind: InvokeAzureAgent
+    id: disclose
+    agent: ComplianceAgent
+    input: ${Local.Quote}
+    output: Local.FinalOffer

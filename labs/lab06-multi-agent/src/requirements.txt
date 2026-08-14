@@ -1,0 +1,14 @@
+# Lab 06 — Multi-Agent Orchestration (Python path)
+# Microsoft Agent Framework. The umbrella `agent-framework` pulls in the core; the
+# Foundry client and orchestration builders live in companion distributions. If your
+# umbrella version already includes them, the extra lines are harmless (pip de-dupes).
+agent-framework
+agent-framework-foundry          # provides agent_framework.foundry.FoundryChatClient
+agent-framework-orchestrations   # provides agent_framework.orchestrations.*Builder
+
+# Azure auth + config (shared with Lab 03).
+azure-identity>=1.17.0
+python-dotenv>=1.0.0
+
+# Optional: only needed if you attach Skills / MCP toolboxes from code (Part B).
+# azure-ai-projects>=1.0.0
