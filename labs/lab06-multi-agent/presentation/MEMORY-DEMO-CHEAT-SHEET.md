@@ -211,6 +211,13 @@ dotnet run --no-build -- --memory foundry --customer CUST-3001 --task 'Finalize 
 there is **no** recall preamble and **no** local `.memory/` file — the platform owns storage — yet a
 **separate-process** turn recalls the loan specifics. Use a **new** `--customer` for a clean first session.
 
+> **⏱️ Timing — PRE-SEED before you present.** Extraction + vector indexing is **server-side and async**; even
+> though RUN 1 waits (`WhenUpdatesCompletedAsync`), the in-session **recall probe on a brand-new scope can still say
+> "I don't have any saved information yet"** — indexing hasn't caught up. This is expected on a *cold* scope, not a
+> failure. **RUN 2** (separate process, same `--customer`) recalls reliably on turn 1. So for a live demo, **run RUN 1
+> during setup a few minutes early**, then present **RUN 2** — recall is immediate and rich. (Local/Cosmos have no such
+> lag — their recall is synchronous.)
+
 ---
 
 ## 🖥️ PORTAL TOUR — where managed memory lives
@@ -241,6 +248,7 @@ Open **https://ai.azure.com** → your **Foundry project** (the one in `FOUNDRY_
 | Cosmos **403 / Forbidden** on first save | Data-plane role not propagated yet (~1–2 min after `provision-cosmos.ps1`), **or** wrong identity — the **Built-in Data Contributor** role must be on the same principal `az` is signed in as. Wait, re-warm, re-run |
 | `--memory foundry` **401** "Authentication to the Azure OpenAI resource failed" while *extracting memories* | The Foundry memory service can't call your deployment. Grant the **account AND project** system-assigned identities **Cognitive Services OpenAI User** (`infra/provision-foundry-memory.ps1`); wait ~2–5 min for data-plane propagation, re-run |
 | `--memory foundry` store-creation error / "memory" not found | Foundry **Memory (preview)** not enabled on the project, or no **embedding** deployment — enable the preview and deploy an embedding model (e.g. `text-embedding-3-small`) |
+| `--memory foundry` RUN 1 recall probe says "no saved information" on a fresh scope | **Expected** — server-side indexing lag on a *cold* scope, not a failure. **RUN 2** (same `--customer`, new process) recalls on turn 1. **Pre-seed** the scope a few minutes before presenting, then demo RUN 2 |
 | `You must install .NET` / runtime not found | `$env:DOTNET_ROLL_FORWARD = "LatestMajor"` (net8 app on newer runtime) |
 | Auth / 401 mid-session | Token expired (~90 min) → re-run pre-flight step 2 |
 | `--memory` seemingly ignored | Keep the `--` separator: `dotnet run -- --memory local` |
