@@ -894,13 +894,44 @@ handoff doesn't lose what the customer already said.
 
 | Strategy | Store | Best for |
 |---|---|---|
-| **Conversation memory** | Cosmos DB (or in-memory for the lab) | Full turn history across handoffs |
+| **Conversation memory** | Cosmos DB — or a local file for the lab (`--memory local`) | Full turn history across handoffs |
 | **Knowledge memory** | Shared **AI Search** index | Facts/documents all agents ground on |
 | **Session state** | Blob / key-value | Small structured state (selected customer, cart) |
 
 Agent Framework threads conversation state through the `Workflow` automatically; for
 **cross-session** persistence, back it with Cosmos DB or Foundry's built-in **Memory**
 tool. Test that context (e.g., the selected customer `CUST-1001`) survives a handoff.
+
+### Run it — BYO memory (`local` today, `cosmos` for durable / cross-session)
+
+The .NET sample (`src-dotnet/BankingConcierge`) ships a working **BYO memory** tier behind one
+`IMemoryStore` interface. Pick the backend with `--memory` — the app, the agents, and the demo
+stay identical; only the store swaps.
+
+```powershell
+# Local file store — offline, no Azure. Seed a session, then a follow-up recalls it:
+dotnet run -- --pattern sequential --memory local --customer CUST-2001 --task 'I would like a $25,000 auto loan for 60 months. Please prepare an offer with the required disclosures.'
+dotnet run -- --pattern sequential --memory local --customer CUST-2001 --task 'Please finalize the loan we discussed earlier and restate its amount, term, and rate.'
+```
+
+For **durable, cross-session** memory, provision a **serverless, keyless** Cosmos DB (Entra RBAC —
+no keys) and switch one flag:
+
+```powershell
+# One-time (from labs/lab06-multi-agent): serverless account + db + container + data-plane role
+./infra/provision-cosmos.ps1 -ResourceGroup rg-agent-memory-lab06 -Location westus2
+
+$env:COSMOS_ENDPOINT  = "https://<your-account>.documents.azure.com:443/"
+$env:COSMOS_DATABASE  = "agentmemory"
+$env:COSMOS_CONTAINER = "conversations"
+
+# Same demo, now backed by Cosmos — a follow-up in a NEW process recalls the earlier session:
+dotnet run -- --pattern sequential --memory cosmos --customer CUST-2001 --task 'Please finalize the loan we discussed earlier and restate its amount, term, and rate.'
+```
+
+The startup banner always prints the backend it actually used (the Cosmos account, the local file,
+or "memory off"), so it never claims a store it isn't using. See
+`presentation/MEMORY-DEMO-CHEAT-SHEET.md` for the full presenter flow.
 
 ---
 

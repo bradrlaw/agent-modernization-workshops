@@ -22,6 +22,12 @@ desktop.ini
 .azure/
 local.settings.json
 
+# Agent memory (runtime BYO store — Lab 06 --memory local)
+.memory/
+
+# Internal-only research notes (Microsoft use — never commit or share externally)
+_internal-notes/
+
 # Environment files
 .env
 .env.local

@@ -176,7 +176,7 @@ dotnet run --no-build -- --pattern sequential --skills on
 
 With `--skills off` those lines disappear. *(Typical delta: "subject to change" appears several times with skills ON and not at all with skills OFF; the "not a commitment to lend" and tax/legal disclaimers appear only with skills ON.)*
 
-**The money line:** *"I didn't touch agent code between these two runs — I only toggled whether the shared `compliance-guidelines` Skill is loaded. Edit that one file and every mapped agent updates. No redeploy."*
+**The key line:** *"I didn't touch agent code between these two runs — I only toggled whether the shared `compliance-guidelines` Skill is loaded. Edit that one file and every mapped agent updates. No redeploy."*
 
 | Skill | Mapped to | The point |
 |---|---|---|

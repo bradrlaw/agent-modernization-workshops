@@ -48,7 +48,7 @@ public static class AgentTeam
     }
 
     public static BankingTeam Build(AIProjectClient client, string model, string customerId,
-        SkillLibrary? skills = null)
+        SkillLibrary? skills = null, string? memoryPreamble = null)
     {
         // Inject the session customer so specialists never ask for an ID or cross customers.
         string sessionNote =
@@ -58,7 +58,10 @@ public static class AgentTeam
         // Agent -> Skills: append the versioned SKILL.md rules mapped to each agent (or nothing
         // when skills are disabled). Editing a SKILL.md and re-running changes behavior with no
         // code change — the whole point of a shared skill library.
-        string Skilled(string agentName) => sessionNote + (skills?.ComposeFor(agentName) ?? string.Empty);
+        // Agent -> Memory: append the recalled memory preamble (or nothing) so every specialist
+        // starts from what we already know about this customer across sessions.
+        string Skilled(string agentName) =>
+            sessionNote + (memoryPreamble ?? string.Empty) + (skills?.ComposeFor(agentName) ?? string.Empty);
 
         var accounts = client.AsAIAgent(
             model: model,
@@ -115,10 +118,15 @@ public static class AgentTeam
         return new BankingTeam(concierge, accounts, lending, cards, compliance);
     }
 
-    private static void LoadDotEnv()
+    /// <summary>
+    /// Loads KEY=VALUE pairs from the nearest <c>.env</c> (walking up from the binary) into the
+    /// process environment, without overriding variables already set in the shell. Public + idempotent
+    /// so <c>Program</c> can call it BEFORE argument parsing — some settings (DEMO_CUSTOMER_ID,
+    /// MEMORY_MODE) are read during arg parsing, so the file must load first.
+    /// </summary>
+    public static void LoadDotEnv()
     {
-        var envPath = FindFileInParents(".env") ?? FindFileInParents(Path.Combine("src", ".env"));
-        if (envPath is null || !File.Exists(envPath))
+        var envPath = FindFileInParents(".env") ?? FindFileInParents(Path.Combine("src", ".env"));        if (envPath is null || !File.Exists(envPath))
         {
             return;
         }

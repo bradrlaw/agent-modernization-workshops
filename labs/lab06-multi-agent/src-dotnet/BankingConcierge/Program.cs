@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using BankingConcierge;
+using BankingConcierge.Memory;
 using BankingConcierge.Skills;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
@@ -21,11 +22,22 @@ using Microsoft.Extensions.AI;
 //   dotnet run -- --pattern magentic       (adaptive planner: plans, delegates, re-plans)
 //   dotnet run -- --pattern handoff --customer CUST-1002
 //   dotnet run -- --pattern sequential --skills off  (Agent->Skills OFF: base instructions only)
+//   dotnet run -- --pattern sequential --memory local (Agent->Memory: recall across sessions)
+//   dotnet run -- --pattern sequential --task "Custom request"  (override the scripted task)
 //
 // Agent -> Skills: by default the specialists load the versioned SKILL.md files under
 // ../../skills/ at runtime (compliance-guidelines, brand-voice, escalation-policy). Pass
 // `--skills off` to see the same team WITHOUT the shared rules, then edit a SKILL.md and
 // re-run to change behavior with no code change.
+//
+// Agent -> Memory: pass `--memory local` to give the team cross-session memory. Before each run
+// the recalled summary/facts are injected into the specialists' instructions; after each run the
+// new turns are compacted and saved under .memory/. To SEE memory change behavior (not just the
+// banner), seed one run with a detailed task, then send a follow-up that DEPENDS on it via `--task`:
+//   dotnet run -- --pattern sequential --memory local --task "I'd like a $25,000 auto loan for 60 months. Prepare an offer with disclosures."
+//   dotnet run -- --pattern sequential --memory local --task "Finalize the loan we discussed and restate its amount, term, APR, and monthly payment."   (recalls the specifics)
+//   dotnet run -- --pattern sequential --memory off   --task "Finalize the loan we discussed and restate its amount, term, APR, and monthly payment."   (no memory: has to ask which loan)
+// `--memory off` (the default) forgets. See README Part E for the Cosmos DB and Foundry-managed options.
 //
 // Verified against github.com/microsoft/agent-framework
 // (dotnet/samples/03-workflows) as of Aug 2026.
@@ -33,7 +45,12 @@ using Microsoft.Extensions.AI;
 
 Console.OutputEncoding = Encoding.UTF8;
 
-var (pattern, customerId, useSkills) = ParseArgs(args);
+// Load .env FIRST so file-based settings are visible during arg parsing. DEMO_CUSTOMER_ID and
+// MEMORY_MODE are read in ParseArgs, so the file must load before it. Precedence ends up:
+// CLI flag  >  shell environment variable  >  .env file  >  built-in default.
+AgentTeam.LoadDotEnv();
+
+var (pattern, customerId, useSkills, memoryMode, customTask) = ParseArgs(args);
 
 try
 {
@@ -41,7 +58,15 @@ try
     Console.WriteLine($"Connecting to Azure AI Foundry (model: {model})...");
 
     SkillLibrary? skills = useSkills ? SkillLibrary.Load() : null;
-    var team = AgentTeam.Build(client, model, customerId, skills);
+
+    // Agent -> Memory (BYO tier): recall what we already know about this customer, then inject it
+    // into every specialist's instructions. `off` (default) skips this entirely.
+    var memory = memoryMode == "off" ? null : new MemoryManager(MemoryManager.CreateStore(memoryMode));
+    var threadId = Guid.NewGuid().ToString("N");
+    Recall? recall = memory is null ? null : await memory.RecallAsync(customerId);
+
+    var team = AgentTeam.Build(client, model, customerId, skills,
+        recall is { HasMemory: true } ? recall.Preamble : null);
 
     if (skills is { Count: > 0 })
     {
@@ -57,29 +82,33 @@ try
         Console.WriteLine("• Skills: OFF — base instructions only (pass --skills on to enable).");
     }
 
+    PrintMemoryStatus(memory, recall, customerId);
+
     Console.WriteLine($"✓ Team ready. Session customer: {customerId}. Pattern: {pattern}.\n");
+
+    List<ChatMessage> finalMessages = [];
 
     switch (pattern)
     {
         case "sequential":
             // Fixed pipeline: each agent's output feeds the next.
-            await RunOnceAsync(
+            finalMessages = await RunOnceAsync(
                 AgentWorkflowBuilder.BuildSequential([team.Accounts, team.Lending, team.Compliance]),
-                "I'd like a $25,000 auto loan for 60 months. Please prepare an offer with the "
+                customTask ?? "I'd like a $25,000 auto loan for 60 months. Please prepare an offer with the "
                     + "required disclosures.");
             break;
 
         case "concurrent":
             // Fan out to specialists in parallel, then aggregate.
-            await RunOnceAsync(
+            finalMessages = await RunOnceAsync(
                 AgentWorkflowBuilder.BuildConcurrent([team.Accounts, team.Lending, team.Cards]),
-                "Give me a financial health check: my balances, loan options I might qualify for, "
+                customTask ?? "Give me a financial health check: my balances, loan options I might qualify for, "
                     + "and anything notable on my cards.");
             break;
 
         case "groupchat":
             // A manager picks who speaks next as specialists collaborate to a resolution.
-            await RunOnceAsync(
+            finalMessages = await RunOnceAsync(
                 AgentWorkflowBuilder
                     .CreateGroupChatBuilderWith(agents =>
                         new RoundRobinGroupChatManager(agents) { MaximumIterationCount = 6 })
@@ -87,14 +116,14 @@ try
                     .WithName("DisputeRoundTable")
                     .WithDescription("Cards, Accounts, and Compliance resolve a disputed charge.")
                     .Build(),
-                "I'm disputing a $180 charge on my debit card that I don't recognize. Please "
+                customTask ?? "I'm disputing a $180 charge on my debit card that I don't recognize. Please "
                     + "investigate and resolve it.");
             break;
 
         case "magentic":
             // Open-ended goal: the manager builds a plan, delegates to specialists, tracks a
             // progress ledger, and re-plans when it stalls. Bounded by max rounds/stalls/resets.
-            await RunOnceAsync(
+            finalMessages = await RunOnceAsync(
                 new MagenticWorkflowBuilder(team.Concierge)
                     .AddParticipants([team.Accounts, team.Lending, team.Cards])
                     .WithName("PurchasePlanner")
@@ -104,7 +133,7 @@ try
                     .WithMaxStalls(3)
                     .WithMaxResets(2)
                     .Build(),
-                "I want to buy a $30,000 car. Figure out affordability from my accounts, "
+                customTask ?? "I want to buy a $30,000 car. Figure out affordability from my accounts, "
                     + "suitable loan options, and recommend next steps.");
             break;
 
@@ -117,8 +146,18 @@ try
                 .WithHandoffs(team.Concierge, team.Specialists)
                 .WithHandoffs(team.Specialists, team.Concierge)
                 .Build();
-            await RunInteractiveAsync(handoff);
+            finalMessages = await RunInteractiveAsync(handoff);
             break;
+    }
+
+    if (memory is not null)
+    {
+        var turns = ToMemoryTurns(finalMessages);
+        var saved = await memory.RecordAsync(customerId, threadId, turns);
+        if (saved > 0)
+        {
+            Console.WriteLine($"\n✓ Memory: saved {saved} turn(s) for {customerId} to {memory.Backend}.");
+        }
     }
 }
 catch (Exception ex)
@@ -128,16 +167,22 @@ catch (Exception ex)
 }
 
 // Runs a workflow to completion for a single scripted task and streams the turns.
-static async Task RunOnceAsync(Workflow workflow, string task)
+static async Task<List<ChatMessage>> RunOnceAsync(Workflow workflow, string task)
 {
     Console.WriteLine($"Task: {task}\n" + new string('-', 60));
-    await StreamWorkflowAsync(workflow, [new ChatMessage(ChatRole.User, task)]);
+    List<ChatMessage> input = [new ChatMessage(ChatRole.User, task)];
+    var produced = await StreamWorkflowAsync(workflow, input);
     Console.WriteLine("\n" + new string('-', 60) + "\nDone.");
+
+    // Record the user's task plus what the workflow produced (skip any echoed user turns).
+    List<ChatMessage> transcript = [.. input];
+    transcript.AddRange(produced.Where(m => m.Role != ChatRole.User));
+    return transcript;
 }
 
 // Drives the interactive handoff loop: each user turn re-runs the workflow, carrying
 // the growing message history so control can move between specialists.
-static async Task RunInteractiveAsync(Workflow workflow)
+static async Task<List<ChatMessage>> RunInteractiveAsync(Workflow workflow)
 {
     Console.WriteLine("Interactive handoff. Type a banking question (or 'quit' to exit).");
     Console.WriteLine("Try: \"What's my available balance?\" then \"What auto loan rates do you have?\"\n");
@@ -164,6 +209,7 @@ static async Task RunInteractiveAsync(Workflow workflow)
     }
 
     Console.WriteLine("\nGoodbye!");
+    return messages;
 }
 
 // Shared streaming reader (mirrors the Agent Framework sample's RunWorkflowAsync):
@@ -215,7 +261,12 @@ static async Task<List<ChatMessage>> StreamWorkflowAsync(Workflow workflow, List
         else if (evt is WorkflowErrorEvent workflowError)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine(workflowError.Exception?.Message ?? "Unknown workflow error.");
+            var ex = workflowError.Exception;
+            Console.Error.WriteLine(ex?.Message ?? "Unknown workflow error.");
+            if (ex?.InnerException is { } inner)
+            {
+                Console.Error.WriteLine($"  ↳ {inner.GetType().Name}: {inner.Message}");
+            }
             Console.ResetColor();
         }
     }
@@ -223,11 +274,51 @@ static async Task<List<ChatMessage>> StreamWorkflowAsync(Workflow workflow, List
     return [];
 }
 
-static (string Pattern, string CustomerId, bool UseSkills) ParseArgs(string[] args)
+// Prints the one-line memory status banner (mirrors the Skills line).
+static void PrintMemoryStatus(MemoryManager? memory, Recall? recall, string customerId)
+{
+    if (memory is null)
+    {
+        Console.WriteLine("• Memory: OFF — no cross-session recall (pass --memory local to enable).");
+        return;
+    }
+
+    if (recall is { HasMemory: true, Record: { } r })
+    {
+        var facts = r.ImportantFacts.Count > 0
+            ? $"; facts: {string.Join(", ", r.ImportantFacts.Take(4))}"
+            : string.Empty;
+        Console.WriteLine($"✓ Memory: ON ({memory.Backend}) — recalled {r.SessionCount} prior "
+            + $"session(s) for {customerId}{facts}.");
+    }
+    else
+    {
+        Console.WriteLine($"✓ Memory: ON ({memory.Backend}) — no prior memory for {customerId} yet "
+            + "(first session; run again to see recall).");
+    }
+}
+
+// Maps the workflow's chat messages to durable memory turns (dropping empty/tool-only messages).
+static List<MemoryTurn> ToMemoryTurns(IEnumerable<ChatMessage> messages)
+{
+    var now = DateTimeOffset.UtcNow;
+    return messages
+        .Where(m => !string.IsNullOrWhiteSpace(m.Text))
+        .Select(m => new MemoryTurn(
+            m.Role == ChatRole.User ? "user" : m.Role == ChatRole.System ? "system" : "assistant",
+            m.AuthorName,
+            m.Text,
+            now))
+        .ToList();
+}
+
+static (string Pattern, string CustomerId, bool UseSkills, string MemoryMode, string? Task) ParseArgs(string[] args)
 {
     var pattern = "handoff";
     var customerId = Environment.GetEnvironmentVariable("DEMO_CUSTOMER_ID") ?? "CUST-1001";
     var useSkills = true;
+    var memoryMode = (Environment.GetEnvironmentVariable("MEMORY_MODE") ?? "off").Trim().ToLowerInvariant();
+    string? customTask = null;
 
     for (var i = 0; i < args.Length - 1; i++)
     {
@@ -243,8 +334,19 @@ static (string Pattern, string CustomerId, bool UseSkills) ParseArgs(string[] ar
                 var v = args[i + 1].ToLowerInvariant();
                 useSkills = v is not ("off" or "false" or "no" or "0");
                 break;
+            case "--memory" or "-m":
+                memoryMode = args[i + 1].Trim().ToLowerInvariant();
+                break;
+            case "--task" or "-t":
+                customTask = args[i + 1];
+                break;
         }
     }
 
-    return (pattern, customerId, useSkills);
+    if (memoryMode is "false" or "no" or "0" or "none" or "disabled")
+    {
+        memoryMode = "off";
+    }
+
+    return (pattern, customerId, useSkills, memoryMode, customTask);
 }
