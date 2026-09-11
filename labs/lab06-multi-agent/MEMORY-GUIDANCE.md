@@ -178,15 +178,18 @@ flowchart LR
 
 ## 8. How Lab 06 implements this
 
-Lab 06 makes the **BYO user-memory tier** runnable and demoable:
+Lab 06 makes **both** memory tiers — bring-your-own and managed — runnable and demoable:
 
-- A `--memory <off|local|cosmos|foundry>` flag (default **off**) selects the backend behind one
-  `IMemoryStore` interface (`Load` / `Save` / `Describe`).
+- A `--memory <off|local|cosmos|foundry>` flag (default **off**) selects the tier.
 - **`local`** (verified live) writes a JSON record per user under `.memory/` — no Azure needed.
 - **Recall** builds a preamble from the record and injects it into every specialist's instructions
   (the same seam the lab's Skills use). **Compaction** is the deterministic shape above.
-- **`cosmos`** (BYO managed store) and **`foundry`** (managed Memory) are wired to the same interface
-  as the roadmap — a *store swap*, not a rewrite.
+- **`cosmos`** (verified live) is the same `IMemoryStore` interface as `local` — a true *store swap*,
+  not a rewrite.
+- **`foundry`** (verified live) is the **managed** tier and deliberately does **not** use `IMemoryStore`.
+  It attaches a `FoundryMemoryProvider` (an `AIContextProvider`) to a **single agent + session**, and the
+  platform extracts, embeds, and recalls automatically. So it runs as a dedicated single-agent demo — a
+  different execution model, not a store swapped into the workflow.
 
 Scope keys: `customerId` = whose memory (persists) · `threadId` = which conversation (per-run).
 

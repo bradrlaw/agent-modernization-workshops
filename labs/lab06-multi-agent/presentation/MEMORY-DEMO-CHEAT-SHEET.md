@@ -119,14 +119,15 @@ concern, not an agent feature."*
 | `off` *(default)* | none | ✅ verified | Clean, stateless runs — every other pattern demo |
 | `local` | JSON file under `.memory/` | ✅ **verified live** | The headline demo — BYO store, no Azure, offline |
 | `cosmos` | Azure Cosmos DB (BYO managed store) | ✅ **verified live** | Durable, cross-session recall — same code, partitioned by `userId` |
-| `foundry` | Foundry-managed Memory (preview) | 🚧 **roadmap** | Platform owns extraction + vector recall — *next* |
+| `foundry` | Foundry-managed Memory (preview) | ✅ **verified live** | Platform owns extraction + vector recall — dedicated single-agent managed demo |
 
-> **Honesty note for the room:** `off`, `local`, and `cosmos` are built and **verified live** today.
-> Cosmos is **keyless** (Microsoft Entra RBAC — no account keys) on a **serverless** account you stand
-> up in ~2 min with `infra/provision-cosmos.ps1`. `foundry` (platform-managed) is still **designed to
-> the same `IMemoryStore` interface but not demoable end-to-end** — that's the remaining roadmap item
-> (deck slide 15). The startup banner always prints the **backend it truly used**: with `COSMOS_ENDPOINT`
-> set it names the Cosmos account/db/container; without it, it falls back to local files and says so —
+> **Honesty note for the room:** all four modes are built and **verified live** today. `off`/`local`/`cosmos`
+> are **BYO** — the app owns memory behind one `IMemoryStore` (recall→inject→compact→save), and `local`↔`cosmos`
+> is a true **store swap** (Cosmos is **keyless** — Entra RBAC, no keys — on a **serverless** account you stand
+> up in ~2 min with `infra/provision-cosmos.ps1`). `foundry` is the **managed** tier: it does **not** use
+> `IMemoryStore` — it attaches a `FoundryMemoryProvider` to a **single agent + session** and the platform
+> extracts/embeds/recalls automatically, so `--memory foundry` runs a dedicated single-agent demo (a different
+> execution model), verified live end-to-end. The startup banner always prints the **backend it truly used** —
 > it never claims a store it isn't using.
 
 ---
@@ -173,7 +174,46 @@ durable, cross-session memory, same app code, one flag.
 
 ---
 
-## 🖥️ PORTAL TOUR — where managed memory will live
+## 🧠 FOUNDRY MODE — platform-managed memory (a different execution model)
+
+`--memory foundry` is **not** a store swap. Where `local`/`cosmos` inject a recall preamble into the
+five-agent workflow, Foundry-managed Memory attaches a `FoundryMemoryProvider` to a **single agent +
+session**; the platform extracts, embeds, and recalls automatically, scoped by `customerId`. So this
+mode runs a dedicated **single-agent** concierge demo (seed turn → async extraction → fresh-session
+recall probe) — faithful to how managed memory really works.
+
+**One-time provision** (idempotent — grants the account **and** project managed identities the model role):
+
+```powershell
+# From labs/lab06-multi-agent. The Foundry memory service calls your deployments AS these identities.
+./infra/provision-foundry-memory.ps1 -Account <your-ai-resource> -ResourceGroup <your-rg> -Project <your-project>
+```
+
+**Pre-flight (Foundry memory):** an **embedding** deployment + Foundry **Memory (preview)** on the project.
+
+```powershell
+$env:AZURE_AI_EMBEDDING_DEPLOYMENT_NAME = "text-embedding-3-small"   # your embedding deployment
+$env:AZURE_AI_MEMORY_STORE_ID           = "lab06-agent-memory"       # any name; created on first run
+az account get-access-token --resource https://ai.azure.com --query expiresOn -o tsv               # warm
+```
+
+**Run — seed on a fresh customer, then recall in a new process:**
+
+```powershell
+# RUN 1 — SEED: fresh scope. Creates/attaches the managed store, answers, then the service extracts.
+dotnet run --no-build -- --memory foundry --customer CUST-3001 --task 'I would like a $25,000 auto loan for 60 months. Please prepare an offer with the required disclosures.'
+
+# RUN 2 — RECALL: a DIFFERENT process, same --customer. Turn 1 already knows $25,000 / 60-mo / APR / payment.
+dotnet run --no-build -- --memory foundry --customer CUST-3001 --task 'Finalize the loan we discussed and restate its amount, term, APR, and monthly payment.'
+```
+
+**What to point at:** the banner reads **`Foundry-managed (preview) — store 'lab06-agent-memory' … scope: CUST-3001`**;
+there is **no** recall preamble and **no** local `.memory/` file — the platform owns storage — yet a
+**separate-process** turn recalls the loan specifics. Use a **new** `--customer` for a clean first session.
+
+---
+
+## 🖥️ PORTAL TOUR — where managed memory lives
 
 Open **https://ai.azure.com** → your **Foundry project** (the one in `FOUNDRY_PROJECT_ENDPOINT`).
 
@@ -182,11 +222,11 @@ Open **https://ai.azure.com** → your **Foundry project** (the one in `FOUNDRY_
 | The project | Overview | "Same project that backs Labs 03–06 — one endpoint." |
 | Model deployment | **Models + endpoints** | your **gpt-4o** deployment — the model the agents call |
 | Embedding model | **Models + endpoints** | Foundry-managed Memory needs an **embedding** deploy (e.g. `text-embedding-3-small`) — the vector index behind recall |
-| Memory stores *(preview)* | **Agents → Memory** (if enabled) | where managed memory items land — the platform-owned equivalent of our `.memory/` file |
+| Memory stores *(preview)* | **Agents → Memory** | where `--memory foundry` items land (store `lab06-agent-memory`) — the platform-owned equivalent of our `.memory/` file |
 | Connections | **Management → Connections** | optional BYO connections; note the lab's `cosmos` mode connects **keyless** via `COSMOS_ENDPOINT` + Entra RBAC (no Connection needed) |
 
 > For the **local** demo you don't touch the portal at all — that's the point of the BYO tier: it
-> runs entirely on your box. The portal tour is for the **managed** roadmap.
+> runs entirely on your box. The portal tour is for the **managed** (`foundry`) tier.
 
 ---
 
@@ -199,6 +239,8 @@ Open **https://ai.azure.com** → your **Foundry project** (the one in `FOUNDRY_
 | Banner says "first session" when you expected recall | Different `DEMO_CUSTOMER_ID`, or `.memory/` was cleared → re-run once to seed, then again to recall |
 | `--memory cosmos` falls back to "local files" | `COSMOS_ENDPOINT` isn't set in the process → set `COSMOS_*` (pre-flight) and re-run; the banner is being honest about the store it used |
 | Cosmos **403 / Forbidden** on first save | Data-plane role not propagated yet (~1–2 min after `provision-cosmos.ps1`), **or** wrong identity — the **Built-in Data Contributor** role must be on the same principal `az` is signed in as. Wait, re-warm, re-run |
+| `--memory foundry` **401** "Authentication to the Azure OpenAI resource failed" while *extracting memories* | The Foundry memory service can't call your deployment. Grant the **account AND project** system-assigned identities **Cognitive Services OpenAI User** (`infra/provision-foundry-memory.ps1`); wait ~2–5 min for data-plane propagation, re-run |
+| `--memory foundry` store-creation error / "memory" not found | Foundry **Memory (preview)** not enabled on the project, or no **embedding** deployment — enable the preview and deploy an embedding model (e.g. `text-embedding-3-small`) |
 | `You must install .NET` / runtime not found | `$env:DOTNET_ROLL_FORWARD = "LatestMajor"` (net8 app on newer runtime) |
 | Auth / 401 mid-session | Token expired (~90 min) → re-run pre-flight step 2 |
 | `--memory` seemingly ignored | Keep the `--` separator: `dotnet run -- --memory local` |
@@ -211,6 +253,7 @@ Open **https://ai.azure.com** → your **Foundry project** (the one in `FOUNDRY_
 **Scope keys:** `customerId` = *whose* memory (persists) · `threadId` = *which* conversation (per-run GUID).
 **Store (local):** `src-dotnet/BankingConcierge/.memory/<customerId>.json` — git-ignored.
 **Store (cosmos):** account from `infra/provision-cosmos.ps1` · db `agentmemory` · container `conversations` · partition `/userId` · keyless (Entra RBAC).
+**Store (foundry):** platform-managed store `AZURE_AI_MEMORY_STORE_ID` on your Foundry project · scope `customerId` · needs an embedding deploy + the account/project MI role (`provision-foundry-memory.ps1`).
 **Compaction shape:** `{ ConversationSummary, ImportantFacts, Decisions, PendingActions, RecentTurns, SessionCount }`.
 **Recall injection:** preamble built from that record → appended to **every** specialist's instructions (the Skills seam).
 **Customers:** `CUST-1001` Alex Morgan · `CUST-1002` Jordan Rivera · `CUST-1003` Taylor Chen · memory demo uses `CUST-2001` (a fresh key so run 1 is always "first session").

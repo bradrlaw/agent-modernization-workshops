@@ -39,6 +39,14 @@ using Microsoft.Extensions.AI;
 //   dotnet run -- --pattern sequential --memory off   --task "Finalize the loan we discussed and restate its amount, term, APR, and monthly payment."   (no memory: has to ask which loan)
 // `--memory off` (the default) forgets. See README Part E for the Cosmos DB and Foundry-managed options.
 //
+// Agent -> Memory (MANAGED tier): `--memory foundry` runs a dedicated SINGLE-agent concierge with
+// Foundry-managed memory — the service stores, embeds, and recalls automatically, keyed by --customer —
+// instead of the five-agent workflow. It is a faithful demo of platform-managed memory (a different
+// execution model), not a store swap. Preview: needs a chat AND an embedding deployment plus Foundry
+// "memory (preview)" enabled on the project. See README Part E.
+//   dotnet run -- --memory foundry --customer CUST-3001 --task "I'd like a $25,000 auto loan for 60 months."
+//   dotnet run -- --memory foundry --customer CUST-3001 --task "Finalize the loan we discussed."   (recalls)
+//
 // Verified against github.com/microsoft/agent-framework
 // (dotnet/samples/03-workflows) as of Aug 2026.
 // -------------------------------------------------------------------------------------
@@ -56,6 +64,17 @@ try
 {
     var (client, model) = AgentTeam.CreateProjectClient();
     Console.WriteLine($"Connecting to Azure AI Foundry (model: {model})...");
+
+    // Agent -> Memory (MANAGED tier): Foundry-managed memory is a platform-owned context provider on a
+    // single agent + session, not a store you can swap into the multi-agent workflow. Run the dedicated
+    // single-agent demo and return before building the team/workflow.
+    if (memoryMode == "foundry")
+    {
+        await FoundryMemoryDemo.RunAsync(client, model, customerId,
+            customTask ?? "I'd like a $25,000 auto loan for 60 months. Please prepare an offer with the "
+                + "required disclosures.");
+        return;
+    }
 
     SkillLibrary? skills = useSkills ? SkillLibrary.Load() : null;
 

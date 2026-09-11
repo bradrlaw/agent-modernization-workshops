@@ -34,7 +34,8 @@ public sealed class MemoryManager
     /// <c>local</c> → <see cref="LocalFileStore"/>; <c>cosmos</c> → <see cref="CosmosStore"/> when
     /// configured (COSMOS_ENDPOINT keyless, or COSMOS_CONNECTION_STRING for the emulator), otherwise a
     /// visible warning + local fallback. If Cosmos is configured but unreachable it fails loudly on
-    /// first use rather than downgrading silently. <c>foundry</c> is still roadmap → local. See README Part E.
+    /// first use rather than downgrading silently. <c>foundry</c> never reaches here — it is a managed,
+    /// single-agent path handled by <see cref="FoundryMemoryDemo"/> before any store is created. See README Part E.
     /// </remarks>
     public static IMemoryStore CreateStore(string mode)
     {

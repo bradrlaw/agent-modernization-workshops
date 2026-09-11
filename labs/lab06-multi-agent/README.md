@@ -902,7 +902,7 @@ Agent Framework threads conversation state through the `Workflow` automatically;
 **cross-session** persistence, back it with Cosmos DB or Foundry's built-in **Memory**
 tool. Test that context (e.g., the selected customer `CUST-1001`) survives a handoff.
 
-### Run it — BYO memory (`local` today, `cosmos` for durable / cross-session)
+### Run it — BYO memory (`local` file, `cosmos` for durable / cross-session)
 
 The .NET sample (`src-dotnet/BankingConcierge`) ships a working **BYO memory** tier behind one
 `IMemoryStore` interface. Pick the backend with `--memory` — the app, the agents, and the demo
@@ -932,6 +932,36 @@ dotnet run -- --pattern sequential --memory cosmos --customer CUST-2001 --task '
 The startup banner always prints the backend it actually used (the Cosmos account, the local file,
 or "memory off"), so it never claims a store it isn't using. See
 `presentation/MEMORY-DEMO-CHEAT-SHEET.md` for the full presenter flow.
+
+### Run it — Foundry-managed memory (`--memory foundry`, platform-managed tier)
+
+`local` and `cosmos` are **bring-your-own**: the app owns memory behind one `IMemoryStore` — it recalls
+a summary, injects it into the five specialists, then compacts + saves after the run. **Foundry-managed
+Memory** is the **managed** alternative: the platform extracts, embeds, stores, and recalls memories
+automatically. It attaches as a context provider (`FoundryMemoryProvider`) to a **single agent + session**,
+so `--memory foundry` runs a dedicated **single-agent** concierge demo — a different execution model,
+faithful to how managed memory actually works — rather than the five-agent workflow.
+
+**Prerequisites (one-time):** a **chat** and an **embedding** deployment on your Foundry project,
+Foundry **Memory (preview)** enabled, and the account + project system-assigned managed identities
+granted **Cognitive Services OpenAI User** so the service can call those deployments for extraction:
+
+```powershell
+# From labs/lab06-multi-agent — grants both managed identities the data-plane role (idempotent):
+./infra/provision-foundry-memory.ps1 -Account <your-ai-resource> -ResourceGroup <your-rg> -Project <your-project>
+
+$env:AZURE_AI_EMBEDDING_DEPLOYMENT_NAME = "text-embedding-3-small"   # your embedding deployment
+$env:AZURE_AI_MEMORY_STORE_ID           = "lab06-agent-memory"       # any name; created on first run
+
+# SEED then RECALL across separate processes, keyed by --customer:
+dotnet run -- --memory foundry --customer CUST-3001 --task 'I would like a $25,000 auto loan for 60 months. Please prepare an offer with the required disclosures.'
+dotnet run -- --memory foundry --customer CUST-3001 --task 'Finalize the loan we discussed and restate its amount, term, APR, and monthly payment.'
+```
+
+The banner names the managed store and customer scope; the second (separate-process) run recalls the
+loan specifics from server-side memory — no recall preamble and no local `.memory/` file, because the
+platform owns storage. Verified live end-to-end against a Foundry `gpt-4o` + `text-embedding-3-small`
+deployment. See `presentation/MEMORY-DEMO-CHEAT-SHEET.md` for the presenter flow and troubleshooting.
 
 ---
 

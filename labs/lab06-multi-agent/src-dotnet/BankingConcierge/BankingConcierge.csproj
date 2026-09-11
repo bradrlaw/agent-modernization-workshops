@@ -6,8 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>BankingConcierge</RootNamespace>
-    <!-- Magentic and some workflow APIs ship as experimental; allow them to compile. -->
-    <NoWarn>$(NoWarn);MAAIW001</NoWarn>
+    <!-- Magentic/workflow APIs (MAAIW001) and Foundry-managed memory (MAAI001) ship as experimental
+         (preview); opt in so they compile. Both are gated features surfaced in Lab 06. -->
+    <NoWarn>$(NoWarn);MAAIW001;MAAI001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
