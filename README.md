@@ -10,7 +10,7 @@ current agent platform: **Copilot Studio**, **Azure AI Foundry**, and the
 
 | | |
 |---|---|
-| **Format** | 8 workshops (90–120 min) + paired hands-on labs |
+| **Format** | 9 workshops (90–120 min) + paired hands-on labs |
 | **Audience** | Developers, architects, platform engineers, security & governance teams |
 | **Outcome** | Working agents, approved environments, and a repeatable modernization playbook |
 
@@ -45,7 +45,8 @@ current agent platform: **Copilot Studio**, **Azure AI Foundry**, and the
 | 5 | [Hybrid Agents](labs/lab05-hybrid-agent/) | Connect Copilot Studio to a Foundry agent |
 | 6 | [Multi-Agent Orchestration](labs/lab06-multi-agent/) | Build a router + specialist agent system |
 | 7 | [Testing & Observability](labs/lab07-eval-observability/) | Evaluation pipelines and monitoring |
-| 8 | [Capstone](labs/lab08-capstone/) | Team presentations and architecture review |
+| 8 | [Knowledge, Tools & Skills](labs/lab08-knowledge-and-tools/) | Foundry IQ knowledge bases, MCP tools, and skills |
+| 9 | [Capstone](labs/lab09-capstone/) | Team presentations and architecture review |
 
 ---
 
@@ -89,7 +90,8 @@ agent-modernization-workshops/
 │   ├── lab05-hybrid-agent/           # Week 5 – Copilot Studio ↔ Foundry
 │   ├── lab06-multi-agent/            # Week 6 – Multi-agent orchestration
 │   ├── lab07-eval-observability/     # Week 7 – Eval & monitoring
-│   └── lab08-capstone/               # Week 8 – Capstone
+│   ├── lab08-knowledge-and-tools/    # Week 8 – Knowledge, tools & skills
+│   └── lab09-capstone/               # Week 9 – Capstone
 ├── shared/                           # Cross-lab utilities, IaC, sample data
 ├── .devcontainer/                    # Dev container for consistent environments
 └── .github/workflows/                # CI pipelines

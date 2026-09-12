@@ -374,7 +374,8 @@ region support and production suitability before using them in a live system.
 
 ## Next Steps
 
-→ [Lab 08: Capstone](../lab08-capstone/) — Team presentations and architecture review
+→ [Lab 08: Managing Knowledge, Tools & Skills](../lab08-knowledge-and-tools/) — Foundry IQ
+knowledge bases, MCP tools, and skills
 
 ## References
 

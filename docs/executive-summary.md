@@ -8,7 +8,7 @@ to Microsoft's current agent stack: **Copilot Studio** (low/no-code), **Azure AI
 
 ## Program at a Glance
 
-- 8 bi-weekly workshops paired with hands-on labs
+- 9 bi-weekly workshops paired with hands-on labs
 - Parallel environment readiness plan to avoid delivery blockers
 - Hybrid and multi-agent patterns included to support fusion teams
 

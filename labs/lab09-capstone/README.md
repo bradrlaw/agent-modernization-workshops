@@ -1,20 +1,20 @@
-# Lab 08 – Capstone: Architecture Decisions & Presentations
+# Lab 09 – Capstone: Architecture Decisions & Presentations
 
 ## Overview
 
 Teams present their agent modernization plans, demonstrate working agents, and
-receive architecture review feedback. This is the culmination of the 8-week program.
+receive architecture review feedback. This is the culmination of the 9-week program.
 
 ## Learning Objectives
 
-- Synthesize learnings from Weeks 1–7 into a coherent modernization strategy
+- Synthesize learnings from Weeks 1–8 into a coherent modernization strategy
 - Present working agent demonstrations
 - Apply the tool selection decision framework to real scenarios
 - Create actionable migration plans
 
 ## Prerequisites
 
-- Completed labs from Weeks 1–7 (or subset based on environment availability)
+- Completed labs from Weeks 1–8 (or subset based on environment availability)
 - Prepared presentation and demo
 
 ## Capstone Format
