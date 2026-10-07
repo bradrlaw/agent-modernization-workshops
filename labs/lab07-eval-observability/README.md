@@ -73,6 +73,17 @@ Establish metrics for your agents:
    - User satisfaction scores
 3. Identify topics that need improvement
 
+> 💡 **Beyond the built-in dashboard:** analytics show aggregate trends but not
+> whether individual answers are correct. For structured, repeatable Copilot
+> Studio evaluations, see the
+> [Copilot Studio Evaluation Framework](https://github.com/bradrlaw/copilot-studio-evals)
+> — a customizable baseline that combines **designed** evaluations (from UX
+> flows, requirements, and tool contracts) with **observed** evaluations (from
+> governed Application Insights telemetry), normalizes both to a shared JSONL
+> format, and exports to the Copilot Studio built-in **Evaluation** tool or the
+> Power CAT **Copilot Studio Kit**. It applies the same designed-plus-observed
+> philosophy this lab uses for the pro-code agent to the low-code side.
+
 ### Step 5: Application Insights Observability
 
 1. Open Application Insights for your deployed agents
@@ -551,5 +562,6 @@ knowledge bases, MCP tools, and skills
 - [.NET: The Microsoft.Extensions.AI.Evaluation libraries](https://learn.microsoft.com/en-us/dotnet/ai/conceptual/evaluation-libraries)
 - [.NET: Tutorial — evaluate the quality of a model's response](https://learn.microsoft.com/en-us/dotnet/ai/quickstarts/evaluate-ai-response)
 - [Monitor AI agents with Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/agents-view)
+- [Copilot Studio Evaluation Framework](https://github.com/bradrlaw/copilot-studio-evals) — designed + observed evals normalized to JSONL, with exports for the Copilot Studio Evaluation tool and the Power CAT Copilot Studio Kit
 - [Run AI Red Teaming Agent locally](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/run-scans-ai-red-teaming-agent)
 - [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)

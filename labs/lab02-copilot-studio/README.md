@@ -1337,5 +1337,13 @@ This same Virtual Banking Assistant scenario will be revisited in later labs:
 | **Lab 04** | Publish via Microsoft 365 Agents SDK to Teams |
 | **Lab 05** | Connect this Copilot Studio agent to a Foundry backend (hybrid) |
 | **Lab 06** | Add specialist agents (accounts, transactions, profile) with a router |
+| **Lab 07** | Add testing, evaluation, and observability across the agents |
 
 → [Lab 03: Azure AI Foundry](../lab03-foundry-agent/) — Build the same scenario as a pro-code agent
+
+> 💡 **Evaluate what you built:** to score this Copilot Studio agent's answers
+> (not just watch dashboard trends), see the
+> [Copilot Studio Evaluation Framework](https://github.com/bradrlaw/copilot-studio-evals)
+> — a customizable baseline of **designed** + **observed** evaluations you can
+> run through the Copilot Studio built-in **Evaluation** tool or the Power CAT
+> **Copilot Studio Kit**. Lab 07 applies the same approach to the pro-code agents.
