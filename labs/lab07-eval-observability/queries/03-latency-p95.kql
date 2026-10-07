@@ -1,0 +1,14 @@
+// End-to-end request latency percentiles (last 24h).
+//
+// `requests` holds inbound SERVER spans (e.g., your agent API). For the latency
+// of the model call alone, point this at `dependencies` and filter on
+// gen_ai.system as in 01-genai-traces-tokens.kql.
+requests
+| where timestamp > ago(24h)
+| summarize calls  = count(),
+            p50ms  = percentile(duration, 50),
+            p95ms  = percentile(duration, 95),
+            p99ms  = percentile(duration, 99),
+            maxMs  = max(duration)
+    by operation_Name, bin(timestamp, 15m)
+| order by timestamp desc

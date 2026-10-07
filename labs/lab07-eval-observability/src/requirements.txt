@@ -1,0 +1,23 @@
+# Lab 07 — Testing, Evaluation & Observability (Python path)
+#
+# Recommended: Python 3.10–3.12. Some evaluation/PyRIT dependencies may not yet
+# publish wheels for 3.13+. The offline custom evaluators and their unit tests
+# run on any supported Python 3.
+
+# Reuse the Lab 03 agent as the system under test
+azure-ai-projects>=2.0.0
+azure-identity>=1.17.0
+openai>=1.40.0
+python-dotenv>=1.0.0
+
+# Evaluation SDK (quality + safety evaluators, evaluate() runner)
+# Install the [redteam] extra to enable red_team_scan.py (PyRIT-based):
+#   pip install "azure-ai-evaluation[redteam]"
+azure-ai-evaluation>=1.0.0
+
+# Tracing: Azure Monitor OpenTelemetry distro + GenAI instrumentation
+azure-monitor-opentelemetry>=1.6.0
+opentelemetry-instrumentation-openai-v2>=2.0b0
+
+# Offline unit tests for the custom evaluators
+pytest>=8.0.0

@@ -1,0 +1,16 @@
+// Tool-call reliability (last 24h).
+//
+// Microsoft.Extensions.AI emits "execute_tool <name>" spans when the model
+// invokes a function/tool. A failed tool shows as success == false (or an
+// exception correlated by operation_Id). Low success rates often explain
+// low groundedness or wrong answers downstream.
+dependencies
+| where timestamp > ago(24h)
+| where isnotempty(customDimensions["gen_ai.tool.name"])
+| extend tool = tostring(customDimensions["gen_ai.tool.name"])
+| summarize calls    = count(),
+            failures = countif(success == false),
+            p95ms    = percentile(duration, 95)
+    by tool, bin(timestamp, 1h)
+| extend successRate = round(1.0 - (todouble(failures) / calls), 3)
+| order by timestamp desc

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="BankingEval.Shared/BankingEval.Shared.csproj" />
+  <Project Path="BankingEval.Console/BankingEval.Console.csproj" />
+  <Project Path="BankingEval.Tests/BankingEval.Tests.csproj" />
+</Solution>

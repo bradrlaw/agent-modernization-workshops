@@ -1,0 +1,24 @@
+// GenAI chat spans: token usage and latency by model (last 24h).
+//
+// Microsoft.Extensions.AI's UseOpenTelemetry (and the Azure.AI.* OTel
+// instrumentation) emit CLIENT spans named "chat <model>". The Azure Monitor
+// exporter writes client spans to the `dependencies` table, with gen_ai.*
+// attributes under customDimensions.
+//
+// NOTE: Some SDK/exporter combinations land these under `traces` instead. If the
+// query returns nothing, inspect a recent record and swap `dependencies` for
+// `traces` (keep the customDimensions extractions the same).
+dependencies
+| where timestamp > ago(24h)
+| where isnotempty(customDimensions["gen_ai.system"])
+| extend model = tostring(customDimensions["gen_ai.response.model"])
+| extend model = iff(isempty(model), tostring(customDimensions["gen_ai.request.model"]), model)
+| extend inputTokens  = toint(customDimensions["gen_ai.usage.input_tokens"])
+| extend outputTokens = toint(customDimensions["gen_ai.usage.output_tokens"])
+| summarize calls       = count(),
+            inputTokens  = sum(inputTokens),
+            outputTokens = sum(outputTokens),
+            p50ms        = percentile(duration, 50),
+            p95ms        = percentile(duration, 95)
+    by model, bin(timestamp, 1h)
+| order by timestamp desc

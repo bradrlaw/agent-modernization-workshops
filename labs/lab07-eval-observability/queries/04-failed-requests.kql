@@ -1,0 +1,13 @@
+// Failed requests and throttling (last 24h).
+//
+// Surfaces error-rate regressions and rate limiting (HTTP 429) so you can alert
+// before users feel it. Pair with the Azure OpenAI quota metrics in the portal.
+requests
+| where timestamp > ago(24h)
+| summarize requests  = count(),
+            failures  = countif(success == false),
+            throttled = countif(resultCode == "429"),
+            p95ms     = percentile(duration, 95)
+    by cloud_RoleName, resultCode, bin(timestamp, 15m)
+| where failures > 0 or throttled > 0
+| order by timestamp desc

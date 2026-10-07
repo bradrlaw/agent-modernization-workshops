@@ -9,6 +9,9 @@ built in previous labs. Ensure agents are production-ready with measurable quali
 
 - Define quality metrics for conversational agents
 - Build evaluation pipelines using Foundry evaluators or custom scripts
+- Write deterministic, domain-specific custom evaluators and run them as an
+  offline CI quality gate (Python **and** .NET)
+- Instrument an agent with OpenTelemetry GenAI tracing to Azure Monitor
 - Enable Copilot Studio analytics
 - Configure Application Insights dashboards for agent observability
 
@@ -80,6 +83,168 @@ Establish metrics for your agents:
    - Error rates and exceptions
 3. Create a dashboard with key agent health metrics
 4. Set up alerts for critical failures
+
+## Hands-On: Build and Run the Evaluation Harness
+
+Steps 1–5 above are the conceptual workflow. This section is the runnable
+implementation that **evaluates the Lab 03 banking agent** in both Python and
+.NET. Everything except response generation, the online (LLM-judge) evaluators,
+tracing export, and red teaming runs fully offline — no Azure required — so you
+can try the quality gate immediately.
+
+### What you build
+
+| Artifact | Python | .NET | Azure needed? |
+|---|---|---|---|
+| Evaluation dataset (15 banking cases) | `data/eval-dataset.jsonl` | ← same file | No |
+| Custom rule-based evaluators | `src/custom_evaluators.py` | `BankingEval.Shared/Evaluators/*.cs` | No |
+| Evaluator unit tests | `tests/test_custom_evaluators.py` | `BankingEval.Tests/CustomEvaluatorTests.cs` | No |
+| Offline quality gate | `src/evaluate_agent.py` | `BankingEval.Console --task evaluate` | No |
+| Generate responses from the agent | `src/generate_responses.py` | `BankingEval.Console --task generate` | Yes |
+| Online (LLM-judge) evaluators | `src/evaluate_agent.py --online` | `BankingEval.Console --task evaluate --online` | Yes |
+| OpenTelemetry tracing → Azure Monitor | `src/trace_agent.py` | `BankingEval.Console --task trace` | Yes |
+| AI red teaming scan | `src/red_team_scan.py` | *(Python-only — see below)* | Yes |
+| Workbook KQL queries | `queries/*.kql` | ← same files | Yes |
+| CI quality-gate workflow | `ci/eval-gate.yml` (both jobs) | ← same file | No |
+
+### Folder layout
+
+```text
+lab07-eval-observability/
+├── data/
+│   ├── eval-dataset.jsonl        # 15 labeled banking cases (shared by both stacks)
+│   └── responses.sample.jsonl    # committed clean sample the offline gate scores
+├── src/                          # Python path
+│   ├── custom_evaluators.py
+│   ├── generate_responses.py
+│   ├── evaluate_agent.py
+│   ├── trace_agent.py
+│   ├── red_team_scan.py
+│   └── requirements.txt
+├── tests/
+│   └── test_custom_evaluators.py
+├── src-dotnet/                   # .NET path
+│   ├── BankingEval.slnx
+│   ├── BankingEval.Shared/       # dataset model + custom IEvaluators
+│   ├── BankingEval.Console/      # generate | evaluate | trace
+│   └── BankingEval.Tests/        # xUnit tests for the evaluators
+├── queries/                      # Application Insights / Log Analytics KQL
+└── ci/
+    └── eval-gate.yml             # reference GitHub Actions quality gate
+```
+
+### Custom evaluators: encoding banking policy
+
+General-purpose evaluators tell you whether an answer is *good*; they do not
+know your *domain policy*. Three deterministic evaluators encode rules that must
+hold on every banking response (pass = 1.0 / fail = 0.0):
+
+- **PII leakage** — fails if a full card/account number (13–19 digits) or an SSN
+  appears. Accounts may only be referenced by their last four digits.
+- **Currency format** — every dollar amount must be `$` + optional thousands
+  separators + exactly two decimals (`$3,842.56`, not `$3842.5`).
+- **Required disclosure** — any loan quote (payment or APR) must carry an
+  "estimate / subject to change" disclosure.
+
+Because they are pure rules (no model call) they are fast, free, deterministic,
+and ideal for unit tests and an offline CI gate. The Python and .NET
+implementations enforce identical logic and ship with matching unit tests.
+
+### Run it — Python
+
+```bash
+cd labs/lab07-eval-observability
+cp src/.env.example src/.env          # then fill in your values
+python -m pip install -r src/requirements.txt
+
+# 1. Unit-test the custom evaluators (offline)
+python -m pytest tests/ -v
+
+# 2. Offline quality gate vs the committed sample (offline; non-zero exit on failure)
+python src/evaluate_agent.py --data data/responses.sample.jsonl
+
+# 3. Generate fresh answers from the Lab 03 agent (needs Azure sign-in), then gate them
+python src/generate_responses.py                      # writes data/responses.jsonl
+python src/evaluate_agent.py --data data/responses.jsonl
+
+# 4. Add the LLM-judge quality evaluators (needs an evaluator model)
+python src/evaluate_agent.py --data data/responses.jsonl --online
+
+# 5. Emit OpenTelemetry traces to Azure Monitor / Foundry
+python src/trace_agent.py
+
+# 6. Adversarial scan (preview)
+python src/red_team_scan.py
+```
+
+Python 3.10–3.12 is recommended for the Azure evaluation SDK. The offline gate
+and unit tests only need `pytest` and `python-dotenv`.
+
+### Run it — .NET
+
+```bash
+cd labs/lab07-eval-observability/src-dotnet
+cp .env.example .env                  # then fill in your values
+
+# 1. Unit-test the custom evaluators (offline)
+dotnet test
+
+# 2. Offline quality gate vs the committed sample (offline; non-zero exit on failure)
+dotnet run --project BankingEval.Console -- --task evaluate --data ../data/responses.sample.jsonl
+
+# 3. Generate fresh answers from the Lab 03 agent (needs Azure sign-in), then gate them
+dotnet run --project BankingEval.Console -- --task generate          # writes data/responses.jsonl
+dotnet run --project BankingEval.Console -- --task evaluate
+
+# 4. Add the LLM-judge quality evaluators (needs an evaluator model)
+dotnet run --project BankingEval.Console -- --task evaluate --online
+
+# 5. Emit OpenTelemetry traces to Azure Monitor / Foundry
+dotnet run --project BankingEval.Console -- --task trace --limit 5
+```
+
+The Console reuses the Lab 03 `BankingAssistant.Shared` project (via a project
+reference) as the system under test, and the
+`Microsoft.Extensions.AI.Evaluation` libraries for scoring.
+
+### Offline CI quality gate
+
+`ci/eval-gate.yml` is a ready-to-copy GitHub Actions workflow with a Python job
+and a .NET job. Both run with **no Azure credentials**: they unit-test the
+evaluators and score `data/responses.sample.jsonl`, failing the build on any
+violation. Copy it into `.github/workflows/` and, when you are ready, add a
+generate step with OIDC auth plus a nightly `--online` run for LLM-judge metrics.
+
+### Dashboards
+
+`queries/*.kql` holds starter Application Insights / Log Analytics queries for a
+workbook: GenAI token usage, estimated cost by model, latency percentiles,
+failed requests and throttling, tool-call reliability, and evaluation-score
+trends. See [Operational Dashboards and Alerts](#operational-dashboards-and-alerts)
+below for the tile list, and the caveat about the `dependencies` vs `traces`
+table in each query's header comment.
+
+### .NET and Python parity
+
+Evaluation and tracing have **full parity** across both stacks — custom
+evaluators, the offline gate, LLM-judge quality evaluators, and OpenTelemetry
+export all have first-class .NET and Python implementations here.
+
+| Capability | Python | .NET | Notes |
+|---|---|---|---|
+| Custom rule-based evaluators | ✅ | ✅ | `IEvaluator` in .NET; callable classes in Python |
+| Offline quality gate (CI) | ✅ | ✅ | Both exit non-zero on failure |
+| LLM-judge quality evaluators | ✅ `azure-ai-evaluation` | ✅ `Microsoft.Extensions.AI.Evaluation.Quality` | Groundedness, relevance, coherence, fluency; Python adds similarity, .NET adds equivalence |
+| Response generation from the agent | ✅ | ✅ | Reuses the Lab 03 agent in both stacks |
+| OpenTelemetry GenAI tracing → Azure Monitor | ✅ | ✅ | `configure_azure_monitor` / `UseOpenTelemetry` + Azure Monitor exporter |
+| **AI red teaming (PyRIT)** | ✅ | ❌ | **Python-only** — see mitigation below |
+
+**The one gap: AI Red Teaming.** The AI Red Teaming Agent is built on PyRIT and
+ships only in the Python `azure-ai-evaluation[redteam]` package; there is no .NET
+SDK today. For a .NET-first team, mitigate by either (a) running the Python
+`red_team_scan.py` as a CI/release step — it targets your deployed agent over
+HTTP regardless of the agent's language — or (b) running scans from the Azure AI
+Foundry portal. Everything else in this lab is native .NET.
 
 ## Foundry Observability Best Practices
 
@@ -383,6 +548,8 @@ knowledge bases, MCP tools, and skills
 - [Observability in Generative AI - Microsoft Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/observability)
 - [Local evaluation with the Azure AI Evaluation SDK](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/evaluate-sdk)
 - [Agent evaluation with the Microsoft Foundry SDK](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk)
+- [.NET: The Microsoft.Extensions.AI.Evaluation libraries](https://learn.microsoft.com/en-us/dotnet/ai/conceptual/evaluation-libraries)
+- [.NET: Tutorial — evaluate the quality of a model's response](https://learn.microsoft.com/en-us/dotnet/ai/quickstarts/evaluate-ai-response)
 - [Monitor AI agents with Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/agents-view)
 - [Run AI Red Teaming Agent locally](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/run-scans-ai-red-teaming-agent)
 - [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)

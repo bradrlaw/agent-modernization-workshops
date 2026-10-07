@@ -1,0 +1,17 @@
+// Evaluation score trend (last 7 days).
+//
+// Requires evaluation results to be emitted to Application Insights. Azure AI
+// Foundry Continuous Evaluation logs gen_ai.evaluation events; the azure-ai-
+// evaluation SDK can also push results. Attribute/event names vary by pipeline,
+// so inspect a recent record and adjust the names below to match your telemetry.
+customEvents
+| where timestamp > ago(7d)
+| where name startswith "gen_ai.evaluation"
+| extend metric = tostring(customDimensions["gen_ai.evaluation.name"])
+| extend score  = todouble(customDimensions["gen_ai.evaluation.score"])
+| where isnotempty(metric) and isnotnull(score)
+| summarize avgScore = round(avg(score), 3),
+            minScore = min(score),
+            runs     = count()
+    by metric, bin(timestamp, 1d)
+| order by timestamp desc, metric asc

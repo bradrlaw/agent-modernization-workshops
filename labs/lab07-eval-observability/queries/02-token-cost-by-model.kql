@@ -1,0 +1,27 @@
+// Estimated token cost by model (last 7 days).
+//
+// Cost is derived from token counts on the GenAI spans. Replace the sample
+// prices (USD per 1K tokens) with your organization's negotiated rates before
+// treating these numbers as anything more than directional.
+let prices = datatable(model:string, inputPer1k:real, outputPer1k:real)
+[
+    "gpt-4o",      0.0025,  0.01,
+    "gpt-4o-mini", 0.00015, 0.0006,
+    "gpt-4.1",     0.002,   0.008,
+    "gpt-4.1-mini",0.0004,  0.0016
+];
+dependencies
+| where timestamp > ago(7d)
+| where isnotempty(customDimensions["gen_ai.system"])
+| extend model  = tostring(customDimensions["gen_ai.response.model"])
+| extend model  = iff(isempty(model), tostring(customDimensions["gen_ai.request.model"]), model)
+| extend inTok  = toreal(customDimensions["gen_ai.usage.input_tokens"])
+| extend outTok = toreal(customDimensions["gen_ai.usage.output_tokens"])
+| summarize inputTokens  = sum(inTok),
+            outputTokens = sum(outTok),
+            calls        = count()
+    by model, bin(timestamp, 1d)
+| lookup kind=leftouter prices on model
+| extend estCostUsd = round((inputTokens / 1000 * inputPer1k) + (outputTokens / 1000 * outputPer1k), 4)
+| project timestamp, model, calls, inputTokens, outputTokens, estCostUsd
+| order by timestamp desc
